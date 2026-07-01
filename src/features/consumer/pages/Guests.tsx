@@ -17,6 +17,7 @@ import {
   type GuestSide,
 } from "@/lib/guestList";
 import { cn } from "@/lib/utils";
+import { confirm } from "@/components/ui/confirm-dialog";
 
 type SideFilter = "all" | GuestSide;
 type StatusFilter = "all" | GuestRsvpStatus;
@@ -291,7 +292,11 @@ const Guests = () => {
                     <Pencil className="w-4 h-4" />
                   </button>
                   <button
-                    onClick={() => deleteGuest.mutate(g.id)}
+                    onClick={async () => {
+                      if (await confirm({ title: `${g.name} 님을 명단에서 삭제할까요?`, confirmText: "삭제", destructive: true })) {
+                        deleteGuest.mutate(g.id);
+                      }
+                    }}
                     className="p-2 text-muted-foreground hover:text-destructive transition-colors"
                     aria-label="삭제"
                   >

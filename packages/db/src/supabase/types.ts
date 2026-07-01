@@ -4760,6 +4760,7 @@ export type Database = {
         Row: {
           ai_summary: string | null
           author: string | null
+          author_region: string | null
           content: string
           created_at: string | null
           hall_name: string | null
@@ -4777,11 +4778,13 @@ export type Database = {
           source_type: string | null
           title: string | null
           user_id: string | null
+          verification_tier: string | null
           wedding_date: string | null
         }
         Insert: {
           ai_summary?: string | null
           author?: string | null
+          author_region?: string | null
           content: string
           created_at?: string | null
           hall_name?: string | null
@@ -4799,11 +4802,13 @@ export type Database = {
           source_type?: string | null
           title?: string | null
           user_id?: string | null
+          verification_tier?: string | null
           wedding_date?: string | null
         }
         Update: {
           ai_summary?: string | null
           author?: string | null
+          author_region?: string | null
           content?: string
           created_at?: string | null
           hall_name?: string | null
@@ -4821,6 +4826,7 @@ export type Database = {
           source_type?: string | null
           title?: string | null
           user_id?: string | null
+          verification_tier?: string | null
           wedding_date?: string | null
         }
         Relationships: [
@@ -5136,6 +5142,8 @@ export type Database = {
           outdoor_available: boolean | null
           place_id: string
           price_per_person: number | null
+          seats_per_table: number | null
+          table_count: number | null
         }
         Insert: {
           ceremony_only_available?: boolean | null
@@ -5149,6 +5157,8 @@ export type Database = {
           outdoor_available?: boolean | null
           place_id: string
           price_per_person?: number | null
+          seats_per_table?: number | null
+          table_count?: number | null
         }
         Update: {
           ceremony_only_available?: boolean | null
@@ -5162,6 +5172,8 @@ export type Database = {
           outdoor_available?: boolean | null
           place_id?: string
           price_per_person?: number | null
+          seats_per_table?: number | null
+          table_count?: number | null
         }
         Relationships: [
           {

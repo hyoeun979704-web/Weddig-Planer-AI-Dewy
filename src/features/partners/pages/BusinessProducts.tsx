@@ -27,6 +27,7 @@ const BusinessProducts = () => {
   const [loading, setLoading] = useState(true);
   const [placeId, setPlaceId] = useState<string | null>(null);
   const [items, setItems] = useState<ProductItem[]>([]);
+  const [loadError, setLoadError] = useState(false);
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
   const [description, setDescription] = useState("");
@@ -36,10 +37,12 @@ const BusinessProducts = () => {
   const [uploaderKey, setUploaderKey] = useState(0);
 
   const loadProducts = useCallback(async (pid: string) => {
+    setLoadError(false);
     try {
       setItems(await fetchBusinessProducts(pid));
     } catch {
       setItems([]);
+      setLoadError(true);
     }
   }, []);
 
@@ -179,7 +182,14 @@ const BusinessProducts = () => {
         </div>
 
         {items.length === 0 ? (
-          <p className="text-center text-sm text-muted-foreground py-8">등록한 상품이 없어요</p>
+          loadError ? (
+            <div className="text-center py-8 space-y-2">
+              <p className="text-sm text-muted-foreground">상품을 불러오지 못했어요.</p>
+              <button onClick={() => placeId && loadProducts(placeId)} className="text-sm text-primary font-semibold">다시 시도</button>
+            </div>
+          ) : (
+            <p className="text-center text-sm text-muted-foreground py-8">등록한 상품이 없어요</p>
+          )
         ) : (
           <div className="grid grid-cols-2 gap-3">
             {items.map((p) => {

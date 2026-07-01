@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Building2, Image, MessageSquare, Edit, Eye, Heart, CheckCircle2, AlertCircle, ChevronRight, Clock, Ticket, Megaphone, Package, Star, Inbox, Palette, BookOpen, ListChecks } from "lucide-react";
+import { ArrowLeft, Building2, Image, MessageSquare, Edit, Eye, Heart, CheckCircle2, AlertCircle, ChevronRight, Clock, Ticket, Megaphone, Package, Star, Inbox, Palette, BookOpen, ListChecks, CalendarCheck } from "lucide-react";
 import { DESIGN_MARKET_ENABLED } from "@/lib/featureFlags";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -9,6 +9,7 @@ import { useBranches } from "@/features/partners/hooks/useBranches";
 import { useBusinessStats, usePartnerApplication, useApplyPartnership } from "@/features/partners/hooks/useBusinessDashboard";
 import { useBusinessActionItems } from "@/features/partners/hooks/useBusinessActionItems";
 import { useListingExtras } from "@/features/partners/hooks/useListingExtras";
+import { computeListingCompleteness, type ListingFields } from "@/features/partners/lib/businessListingCompleteness";
 import { toast } from "sonner";
 
 const BusinessDashboard = () => {
@@ -61,16 +62,33 @@ const BusinessDashboard = () => {
     : REQUIRED_FIELDS;
   const isSchemaComplete = !!listingRow && missingFields.length === 0;
 
-  // 확장 완성도(M5) — 기본 필드 + 개인화 연료(포트폴리오·무드). "100%=노출+매칭 가능" 정합.
+  // 완성도 게이지 — 위저드(BusinessVendorEdit)와 **동일한 computeListingCompleteness** 기반으로
+  // 단일화(드리프트 제거: 두 화면이 같은 % · 같은 미입력 목록). REQUIRED_FIELDS/missingFields 는
+  // 제휴 신청 자격 게이트 전용으로 분리 유지. 여기에 개인화 연료(포트폴리오·무드, M5)만 확장.
+  const listingFields: ListingFields = {
+    name: String(listingRow?.name ?? ""),
+    description: String(listingRow?.description ?? ""),
+    city: String(listingRow?.city ?? ""),
+    district: String(listingRow?.district ?? ""),
+    imageUrl: String(listingRow?.main_image_url ?? ""),
+    minPrice: listingRow?.min_price != null ? String(listingRow.min_price) : "",
+    tags: Array.isArray(listingRow?.tags) ? (listingRow!.tags as string[]).join(", ") : "",
+    inquiryChannel: ["chat", "url", "phone"].includes(String(listingRow?.inquiry_channel))
+      ? (listingRow!.inquiry_channel as "chat" | "url" | "phone")
+      : "chat",
+    inquiryUrl: String(listingRow?.inquiry_url ?? ""),
+    inquiryPhone: String(listingRow?.inquiry_phone ?? ""),
+  };
+  const baseCompleteness = computeListingCompleteness(listingFields);
   const extraItems = [
     { key: "portfolio", label: "포트폴리오 사진", done: extras.hasPortfolio },
     { key: "mood", label: "취향 무드 태깅", done: extras.hasMood },
   ];
-  const completenessDone = REQUIRED_FIELDS.length - missingFields.length + extraItems.filter((e) => e.done).length;
-  const completenessTotal = REQUIRED_FIELDS.length + extraItems.length;
+  const completenessDone = baseCompleteness.doneCount + extraItems.filter((e) => e.done).length;
+  const completenessTotal = baseCompleteness.total + extraItems.length;
   const completenessPercent = Math.round((completenessDone / completenessTotal) * 100);
   const completenessMissing = [
-    ...missingFields.map((f) => f.label),
+    ...baseCompleteness.missing.map((m) => m.label),
     ...extraItems.filter((e) => !e.done).map((e) => e.label),
   ];
 
@@ -227,6 +245,16 @@ const BusinessDashboard = () => {
       href: "/business/gallery",
       badge: null,
     },
+    // 예식장 전용 — 날짜별 예약 가능/마감을 소비자 상세에 노출(예식일 맞는 신부에게 우선 안내).
+    ...(businessProfile.service_category === "wedding_hall"
+      ? [{
+          icon: CalendarCheck,
+          label: "예약 가능일",
+          description: "날짜별 가능/마감 등록 · 상세페이지 노출",
+          href: "/business/availability",
+          badge: null,
+        }]
+      : []),
     {
       icon: Ticket,
       label: "쿠폰 관리",

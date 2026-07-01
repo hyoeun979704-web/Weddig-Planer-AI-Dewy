@@ -33,6 +33,7 @@ const BusinessEvents = () => {
   const [loading, setLoading] = useState(true);
   const [placeId, setPlaceId] = useState<string | null>(null);
   const [items, setItems] = useState<EventItem[]>([]);
+  const [loadError, setLoadError] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [startsAt, setStartsAt] = useState("");
@@ -43,10 +44,12 @@ const BusinessEvents = () => {
   const [uploaderKey, setUploaderKey] = useState(0);
 
   const loadEvents = useCallback(async (pid: string) => {
+    setLoadError(false);
     try {
       setItems(await fetchBusinessEvents(pid));
     } catch {
       setItems([]);
+      setLoadError(true);
     }
   }, []);
 
@@ -190,7 +193,14 @@ const BusinessEvents = () => {
         </div>
 
         {items.length === 0 ? (
-          <p className="text-center text-sm text-muted-foreground py-8">등록한 이벤트가 없어요</p>
+          loadError ? (
+            <div className="text-center py-8 space-y-2">
+              <p className="text-sm text-muted-foreground">이벤트를 불러오지 못했어요.</p>
+              <button onClick={() => placeId && loadEvents(placeId)} className="text-sm text-primary font-semibold">다시 시도</button>
+            </div>
+          ) : (
+            <p className="text-center text-sm text-muted-foreground py-8">등록한 이벤트가 없어요</p>
+          )
         ) : (
           <div className="space-y-3">
             {items.map((e) => {

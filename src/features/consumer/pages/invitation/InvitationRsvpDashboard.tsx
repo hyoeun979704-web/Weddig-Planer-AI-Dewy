@@ -210,6 +210,15 @@ const InvitationRsvpDashboard = () => {
               </Button>
             </div>
 
+            {/* 가져온 응답은 하객 명단에서 측·관계·참석인원으로 관리(식대 추정과도 연동). */}
+            <button
+              type="button"
+              onClick={() => navigate("/guests")}
+              className="w-full text-center text-[13px] text-primary font-medium py-1"
+            >
+              하객 명단에서 관리하기 →
+            </button>
+
             {/* 응답 목록 */}
             <div className="space-y-2">
               {rows.map((r) => (

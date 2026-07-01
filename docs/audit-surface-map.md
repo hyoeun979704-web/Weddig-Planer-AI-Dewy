@@ -23,6 +23,7 @@
 ### A3. 준비 도구 (개인화 핵심)
 - 일정/타임라인 (`/schedule /my-schedule`) — 추천 할일 퀴즈카드
 - **보드/체크리스트** (`/board`)
+- 하객 명단 (`/guests`) — 측·관계·RSVP·참석인원 관리(RSVP 대시보드에서 import, 식대 추정 연동)
 - 예산 (`/budget /budget/history /budget/category/:c /budget/split-simulator`) — 환불 포함
 - 커플 다이어리·투표 (`/couple-diary /couple-vote`) · Wrapped/마일스톤 (`/wrapped`) · 머지게임 (`/merge-game`) · 리퍼럴 (`/referral`)
 
@@ -57,6 +58,7 @@
 - **리뷰 관리** (`/business/reviews`) — 답글·평점필터·정렬·답글률
 - 쿠폰 (`/business/coupons`) · 이벤트 (`/business/events`)
 - 리드 (`/business/leads`) · 문의 (`/business/inquiries`) · 배송/전달 (`/business/deliveries`)
+- **예약 가능일** (`/business/availability`) — 예식장 전용, 날짜별 가능/마감 입력 → 소비자 상세 노출
 - 디자인(청첩장 디자이너) (`/business/designs`) · 가이드 (`/business/guide /business/guides`)
 
 ## C. 운영자 (Admin) — 관리 항목 전수

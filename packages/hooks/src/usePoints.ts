@@ -33,6 +33,11 @@ const REASON_LABELS: Record<string, string> = {
   first_comment: "첫 댓글",
   place_review_first: "첫 업체 후기 작성",
   tutorial_master: "튜토리얼 마스터 보너스",
+  // 준비 진행 리워드(check_planning_milestones) — 사유 키는 RPC·유니크 인덱스와 일치.
+  planning_budget: "예산 설정 보상",
+  planning_venue: "예식장 등록 보상",
+  planning_quote: "첫 견적 요청 보상",
+  planning_checklist: "체크리스트 완료 보상",
   // 사용(차감)
   heart_charge: "하트 충전",
   voucher_exchange: "상품권 교환",
