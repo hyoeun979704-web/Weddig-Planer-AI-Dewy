@@ -25,8 +25,24 @@ export const SDM_HAIR_STYLES: { value: string; ko: string }[] = [
   { value: "braided updo", ko: "땋은 업스타일" },
 ];
 
+/** 신랑 SDM 헤어 옵션(남성). 신부 목록과 대칭 — value=모델 지시 영어, ko=표시. */
+export const SDM_GROOM_HAIR_STYLES: { value: string; ko: string }[] = [
+  { value: "clean side part", ko: "클린 사이드파트" },
+  { value: "natural down perm", ko: "내추럴 다운펌" },
+  { value: "slicked-back undercut", ko: "슬릭백" },
+  { value: "comma-shaped fringe", ko: "쉼표머리" },
+  { value: "two-block cut", ko: "투블럭" },
+  { value: "pompadour", ko: "포마드" },
+  { value: "middle-part fringe", ko: "가르마" },
+  { value: "textured short crop", ko: "짧은 크롭" },
+];
+
+/** 성별별 SDM 헤어 목록. */
+export const sdmHairStyles = (gender: "bride" | "groom"): { value: string; ko: string }[] =>
+  gender === "groom" ? SDM_GROOM_HAIR_STYLES : SDM_HAIR_STYLES;
+
 export const sdmHairKo = (value: string): string =>
-  SDM_HAIR_STYLES.find((s) => s.value === value)?.ko ?? value;
+  [...SDM_HAIR_STYLES, ...SDM_GROOM_HAIR_STYLES].find((s) => s.value === value)?.ko ?? value;
 
 interface BuildSdmPromptArgs {
   sceneCode: SceneCode;

@@ -74,8 +74,8 @@
 ### 진행 현황 (260701 세션)
 - ✅ **헤어**: 백엔드+프론트 완료(토글·남성 프리셋).
 - ✅ **드레스 피팅(예복)**: `buildFittingPrompt`/`buildGroomFittingPrompt` + DressFitting 토글·예복 텍스트 완료.
-- ✅ **스드메 빌더**: `buildSdmPrompt` 신랑 분기(예복·그루밍·남성헤어) 완료. ⬜ **SdmPreview UI 배선 이월**
-  (7단계 플로우에서 makeup 스텝 스킵 + **남성 헤어 옵션** 필요 — 그거 없이 배선하면 신부 헤어가 신랑에 들어감).
+- ✅ **스드메**: `buildSdmPrompt` 신랑 분기 + **SdmPreview UI 완료** — 성별 토글, makeup 스텝 스킵,
+  남성 SDM 헤어 옵션(`SDM_GROOM_HAIR_STYLES`/`sdmHairStyles`), 예복 텍스트 입력, 진행바 동적화.
 - ⬜ **드레스 추천(DressRecommend)**: `buildRecommendSuitPrompt` 준비됨, **신랑 체형·수트 가이드 데이터** 필요(이월).
 - ⬜ **컨설팅**: 신부 A4 보드 재설계(수트·타이·그루밍) — 가장 큼, 독립 세션.
 
