@@ -5,6 +5,7 @@ import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { regionalAverages, regions, resolveRegionKey } from "@/data/budgetData";
 import { PLACE_TO_BUDGET_CATEGORY } from "@/lib/categoryLabels";
 import { BUDGET_GUIDE_LABEL, priceDeltaPct, pricePositionLabel } from "@/lib/regionalPriceGuide";
+import { priceBandFromDelta, pricePersonaCoaching } from "@/lib/personaCoaching";
 import { fmt } from "@/lib/budgetFormat";
 import { cn } from "@/lib/utils";
 
@@ -34,7 +35,8 @@ const RegionalPriceGuide = ({ place }: { place: { category: string; city: string
   const userBudget = settings?.category_budgets?.[bc as keyof typeof settings.category_budgets] ?? null;
   const deltaPct = priceDeltaPct(userBudget, avgManwon);
   const position = pricePositionLabel(deltaPct);
-  const isBudgetPersona = weddingSettings.planning_style === "budget_analytic";
+  // 성향(planning_style)별 코칭 — 예산형·디자이너·초보·표준 × 예산대. 없으면 생략.
+  const coaching = pricePersonaCoaching(weddingSettings.planning_style, priceBandFromDelta(deltaPct));
 
   return (
     <div className="mt-3 rounded-xl border border-border bg-muted/30 p-3">
@@ -52,15 +54,17 @@ const RegionalPriceGuide = ({ place }: { place: { category: string; city: string
       )}
 
       {position ? (
-        <p
-          className={cn(
-            "text-xs mt-2 font-medium",
-            position.tone === "low" ? "text-emerald-600" : position.tone === "high" ? "text-amber-600" : "text-muted-foreground",
-          )}
-        >
-          내 예산 {fmt(userBudget as number)}만원 · {position.text}
-          {isBudgetPersona && position.tone === "low" ? " — 알뜰하게 잡으셨어요." : ""}
-        </p>
+        <>
+          <p
+            className={cn(
+              "text-xs mt-2 font-medium",
+              position.tone === "low" ? "text-emerald-600" : position.tone === "high" ? "text-amber-600" : "text-muted-foreground",
+            )}
+          >
+            내 예산 {fmt(userBudget as number)}만원 · {position.text}
+          </p>
+          {coaching && <p className="text-[11px] text-muted-foreground mt-1">{coaching}</p>}
+        </>
       ) : (
         <button
           type="button"

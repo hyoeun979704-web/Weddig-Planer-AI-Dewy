@@ -38,8 +38,10 @@ export interface MealCostEstimateResult {
   perGuestRegional: number;
   /** 하객 명단에서 집계된 식수(있을 때만 > 0). */
   guestListHeads: number;
-  /** 예산형 페르소나 — 보증인원 미달 경고를 강조. */
+  /** 예산형 페르소나 — 보증인원 미달 경고 색을 강조. */
   isBudgetPersona: boolean;
+  /** 성향(planning_style) — 미달 경고 코칭 카피 분기용. */
+  planningStyle: import("@/lib/weddingPersona").PlanningStyle | null;
   daysUntilWedding: number | null;
   isLoading: boolean;
 }
@@ -132,6 +134,7 @@ export function useMealCostEstimate(): MealCostEstimateResult {
       perGuestRegional: regional.per_guest_meal,
       guestListHeads,
       isBudgetPersona: weddingSettings.planning_style === "budget_analytic",
+      planningStyle: weddingSettings.planning_style ?? null,
       daysUntilWedding,
       isLoading: guestsLoading || budgetLoading || venueQuery.isLoading,
     };

@@ -4,6 +4,7 @@ import { useMealCostEstimate } from "@/hooks/useMealCostEstimate";
 import { useBudget } from "@/hooks/useBudget";
 import { fmt, wonPreview } from "@/lib/budgetFormat";
 import { MEAL_HEADS_SOURCE_LABEL, MEAL_PRICE_SOURCE_LABEL } from "@/lib/mealCost";
+import { mealShortfallCoaching } from "@/lib/personaCoaching";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
@@ -20,6 +21,7 @@ const MealCostCalculator = () => {
     venueName,
     regionLabel,
     isBudgetPersona,
+    planningStyle,
     daysUntilWedding,
     isLoading,
   } = useMealCostEstimate();
@@ -83,7 +85,7 @@ const MealCostCalculator = () => {
           <span>
             식장 보증인원이 예상 참석({e.expectedHeads}명)보다 <b>{e.guaranteeShortfall}명</b> 많아요.
             덜 와도 <b>{fmt(e.shortfallCostManwon)}만원</b>은 그대로 식대로 나가요
-            {isBudgetPersona ? " — 보증인원을 낮출 수 있는지 식장에 꼭 확인하세요." : "."}
+            {mealShortfallCoaching(planningStyle)}
           </span>
         </div>
       )}
