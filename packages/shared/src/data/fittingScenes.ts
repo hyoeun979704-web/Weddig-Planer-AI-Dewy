@@ -191,10 +191,15 @@ export const SCENE_TYPE_DESC: Record<SceneType, string> = {
 export const buildFittingPrompt = (
   sceneCode: SceneCode,
   dressDescription: string = "",
-  opts: { custom?: boolean; shotType?: ShotType } = {},
+  opts: { custom?: boolean; shotType?: ShotType; gender?: "bride" | "groom" } = {},
 ): string => {
   const scene = sceneByCode(sceneCode);
   if (!scene) throw new Error(`unknown scene code: ${sceneCode}`);
+
+  // 신랑(예복)은 별도 빌더 — 신부 프롬프트(튜닝됨)를 그대로 보존해 회귀 0.
+  if (opts.gender === "groom") {
+    return buildGroomFittingPrompt(scene, dressDescription, !!opts.custom, opts.shotType ?? "full");
+  }
 
   const isCeremony = scene.scene === "CEREMONY";
   // 맞춤(custom)=참조 드레스 사진(Image 2) 없이 SCHEMA 텍스트만으로 드레스를 지시.
@@ -327,6 +332,127 @@ Output: one photorealistic 3:4 vertical image.`;
 };
 
 /**
+ * 신랑 예복(수트/턱시도) 피팅 프롬프트 — 신부 buildFittingPrompt 의 대칭 빌더.
+ * 신부 프롬프트를 건드리지 않고 별도로 둬 회귀 0. 드레스→예복, 부케·신부 메이크업 제거,
+ * 남성 그루밍·수트 디테일·남성 포즈로 치환. 씬(장소)의 신부 표현은 중립화(bride→groom).
+ * dressDescription 인자에는 신랑 예복 설명(커스텀 텍스트)이 들어온다.
+ */
+function buildGroomFittingPrompt(
+  scene: FittingScene,
+  suitDescription: string,
+  custom: boolean,
+  shotType: ShotType,
+): string {
+  const isCeremony = scene.scene === "CEREMONY";
+  const suitSchemaBlock = suitDescription
+    ? custom
+      ? `\nSUIT SCHEMA — render this suit exactly\n${suitDescription}\nRender precisely these attributes. Do not invent a different\nsilhouette, lapel, color, or detail set.\n`
+      : `\nSUIT SCHEMA — match these attributes exactly\n${suitDescription}\nIf the suit in Image 2 disagrees with any attribute above, the\nattribute list above wins.\n`
+    : "";
+  const referencesBlock = custom
+    ? `REFERENCES\n- Image 1: the groom (user's photo). This is the only reference.`
+    : `REFERENCES\n- Image 1: the groom (user's photo)\n- Image 2: a wedding suit / tuxedo on a headless mannequin`;
+  const taskSuitSource = custom
+    ? "the wedding suit described in SUIT SCHEMA below"
+    : "the exact suit from Image 2";
+  const suitSectionHeader = custom
+    ? "SUIT — render exactly as specified in SUIT SCHEMA"
+    : "SUIT — keep exactly from Image 2";
+  // 씬 문구의 신부 표현 중립화(장소 묘사라 대부분 무해, "the bride stands" 류만 치환).
+  const venue = scene.promptBlock
+    .replace(/\bbride\b/gi, "groom")
+    .replace(/\bher\b/gi, "his")
+    .replace(/\bshe\b/gi, "he");
+
+  return `You're generating a photorealistic Korean groom portrait.
+
+${referencesBlock}
+
+TOP PRIORITY — IDENTITY MATCH (most important rule)
+The face in the output must be UNMISTAKABLY the same person from Image 1 —
+someone who knows him must recognize him instantly. Reproduce his exact
+facial features; do NOT beautify, slim, enlarge eyes, or average toward a
+generic "AI groom model":
+- Eyes: same shape, size, slant / canthal tilt, spacing, and eyelid type
+  (monolid / inner or outer double eyelid, and crease height)
+- Eyebrows: same shape, thickness, arch and position
+- Nose: same bridge height and width, tip shape, nostril width
+- Lips: same shape, fullness, width, and lip-to-philtrum proportion
+- Face: same jawline, chin shape, cheekbone position and height, hairline,
+  and overall face length-to-width ratio
+- Keep his exact skin tone and undertone, plus any moles, freckles, or other
+  distinctive marks
+This identity match takes priority over every other instruction below.
+
+TASK
+Produce a single wedding photograph of the groom from Image 1 wearing
+${taskSuitSource}, in the venue described below.
+
+${shotFramingBlock(shotType, false)}
+
+GROOM — keep exactly from Image 1
+- Face: the SAME PERSON — reproduce EVERY feature exactly as in IDENTITY MATCH
+  above. Recognizable at a glance; no beautification.
+- Skin tone, complexion, age
+- Hair color and natural texture (neat men's grooming okay, identity stays)
+- Keep his recognizable build, but follow the FRAMING above for proportions.
+
+GROOMING — clean, wedding-ready (NOT makeup)
+- Neat groomed hair, tidy brows, clean healthy skin. If facial hair is present,
+  keep it neatly trimmed; do NOT add or remove facial hair. Natural, not made-up.
+- Enhance only. Do NOT change his identity, features, bone structure, skin tone,
+  or age — he must still clearly be the same person.
+
+${suitSectionHeader}
+- Silhouette and fit (slim / regular), jacket length, lapel type (notch / peak /
+  shawl), button count, vest/waistcoat presence, shirt, tie or bow tie, pocket square
+- Color: the exact shade and tone
+- Fabric / material — reproduce PRECISELY (matte wool / satin tux lapel / textured):
+  weave, sheen level, drape, and how it catches light
+- All details — buttons, stitching, boutonniere — at the same positions and scale
+- Drapes and fits naturally
+${suitSchemaBlock}
+BODY PROPORTIONS
+- Follow the FRAMING section for shot range and proportions. Keep his recognizable
+  build and identity, render a flattering, natural line.
+- Never doll-like / chibi proportions, never an awkward short-legged crop.
+
+VENUE
+${venue}
+
+POSE
+${
+  isCeremony
+    ? `- Standing or a slight mid-stride at the aisle, confident upright posture
+- Hands natural — adjusting a cuff or jacket button, one hand lightly in a pocket,
+  or relaxed at the sides
+- Soft confident expression, eyes engaging with camera ahead`
+    : `- Natural standing pose with subtle contrapposto
+- Hands natural — adjust a cuff, one hand lightly in a pocket, or relaxed
+- Soft natural expression, eyes warm and engaged`
+}
+- Avoid a stiff mannequin stance with arms hanging straight and hands clasped
+- Full body or 3/4 body visible, centered
+
+DO NOT
+- Drift the face toward generic / idealized features
+- Slim, broaden, or alter the groom's body
+- Modify any suit detail
+- Show a mannequin, stand, or pole
+- Add a bouquet, veil, or bridal elements
+- Add watermarks, text, logos, sparkle marks
+- Stylize (cartoon, illustration, anime)
+${
+  isCeremony
+    ? `- Add guests, audience, photographers, officiants, or staff. The ceremony
+  space must be EMPTY except for him; every chair UNOCCUPIED.`
+    : "- Place the groom on a wedding aisle (this is a studio shoot)"
+}
+
+Output: one photorealistic 3:4 vertical image.`;
+}
+
+/**
  * 추천 모드 프롬프트 — 참조 드레스 이미지 없이 사용자 사진 1장만 입력.
  *
  * gpt-image-2 가 사용자 사진과 체형 가이드를 읽고 어울리는 드레스를
@@ -338,7 +464,9 @@ export const buildRecommendDressPrompt = (
   sceneCode: SceneCode,
   bodyShapeLabel: string,
   bodyShapeGuide: string,
+  gender: "bride" | "groom" = "bride",
 ): string => {
+  if (gender === "groom") return buildRecommendSuitPrompt(sceneCode, bodyShapeLabel, bodyShapeGuide);
   const scene = sceneByCode(sceneCode);
   if (!scene) throw new Error(`unknown scene code: ${sceneCode}`);
 
@@ -432,3 +560,93 @@ ${
 
 Output: one photorealistic 3:4 vertical image.`;
 };
+
+/**
+ * 신랑 예복 추천 프롬프트 — buildRecommendDressPrompt 의 대칭(수트). 체형 가이드에 맞춰
+ * 가장 어울리는 예복(핏·라펠·색)을 골라 전신 합성. 신부판은 손대지 않음(회귀 0).
+ */
+function buildRecommendSuitPrompt(
+  sceneCode: SceneCode,
+  bodyShapeLabel: string,
+  bodyShapeGuide: string,
+): string {
+  const scene = sceneByCode(sceneCode);
+  if (!scene) throw new Error(`unknown scene code: ${sceneCode}`);
+  const isCeremony = scene.scene === "CEREMONY";
+  const venue = scene.promptBlock
+    .replace(/\bbride\b/gi, "groom")
+    .replace(/\bher\b/gi, "his")
+    .replace(/\bshe\b/gi, "he");
+
+  return `You're generating a photorealistic Korean groom portrait.
+
+REFERENCE
+- Image 1: the groom (user's photo). This is the only reference.
+
+TOP PRIORITY — IDENTITY MATCH (most important rule)
+The face must be UNMISTAKABLY the same person from Image 1 — someone who
+knows him recognizes him instantly. Reproduce his exact features; do NOT
+beautify, slim, enlarge eyes, or drift toward a generic "AI groom model":
+- Eyes: shape, size, slant / canthal tilt, spacing, eyelid type
+- Eyebrows, nose (bridge, tip, nostrils), lips (shape, fullness)
+- Face: jawline, chin, cheekbone position, hairline, length-to-width ratio
+- Exact skin tone / undertone, plus any moles or freckles
+This rule takes priority over everything else.
+
+TASK
+Act as a senior Korean wedding stylist for grooms. The groom's body type is
+"${bodyShapeLabel}". Choose the SINGLE most flattering wedding suit / tuxedo
+for this body type and the venue below, then produce a single full-body
+photograph of the groom wearing it. Vertical 3:4, photorealistic.
+
+GROOM BODY TYPE — choose a flattering suit based on this guide
+${bodyShapeGuide}
+Pick exactly ONE coherent look: fit (slim / regular), lapel (notch / peak /
+shawl), jacket length, vest or no vest, shirt, tie or bow tie, and a color
+(classic black / charcoal / navy / grey / ivory tux). Avoid what the guide
+warns against. The suit must look intentional and fully designed.
+
+GROOM — keep exactly from Image 1
+- Face: the SAME PERSON — every feature exactly as in IDENTITY MATCH above.
+- Skin tone, complexion, age, hair color and natural texture (neat grooming okay).
+- Body proportions:
+  · Full-body input → COPY the photo's height, build, proportions. The photo wins.
+  · Upper-body input → infer a plausible Korean man body consistent with "${bodyShapeLabel}".
+- Never doll-like / chibi or stretched proportions.
+
+GROOMING — clean, wedding-ready (NOT makeup)
+- Neat groomed hair, tidy brows, clean healthy skin; keep any facial hair neatly
+  trimmed (do not add/remove). Enhance only; identity, features, skin tone, age unchanged.
+
+VENUE
+${venue}
+
+POSE
+${
+  isCeremony
+    ? `- Standing or slight mid-stride at the aisle, confident upright posture
+- Hands natural — adjusting a cuff/button or lightly in a pocket
+- Soft confident expression, eyes to the camera`
+    : `- Natural standing pose, subtle contrapposto
+- Hands natural — adjust a cuff or hand lightly in a pocket
+- Soft natural expression`
+}
+- Full body or 3/4 body visible, centered
+- Avoid symmetric mannequin-stiff stance
+
+DO NOT
+- Drift the face toward generic / idealized features
+- Slim, broaden, or alter the groom's actual body
+- Mix conflicting design elements — the suit must read as one cohesive look
+- Show a mannequin, stand, or pole
+- Add a bouquet, veil, or bridal elements
+- Add watermarks, text, logos
+- Stylize (cartoon, illustration, anime)
+${
+  isCeremony
+    ? `- Add guests, audience, photographers, officiants, or staff besides the groom. Every chair UNOCCUPIED.`
+    : "- Place the groom on a wedding aisle (this is a studio shoot)"
+}
+
+Output: one photorealistic 3:4 vertical image.`;
+}

@@ -16,6 +16,7 @@ import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { usePersonaInsights } from "@/hooks/usePersonaInsights";
 import { useTextDraft } from "@/hooks/useTextDraft";
 import { QUOTE_STYLE_LABEL } from "@/lib/quoteContext";
+import { quotePersonaContext } from "@/lib/quotePersonaContext";
 
 // 스타일 라벨 단일 소스(견적 컨텍스트 카드와 공유 — 드리프트 방지).
 const STYLES = Object.entries(QUOTE_STYLE_LABEL).map(([v, label]) => ({ v, label }));
@@ -30,6 +31,10 @@ const QuoteNew = () => {
   // 인식을 높인다(재혼·스몰·임신·예산형 사용자가 자기 조건을 빼먹지 않게).
   const { personaMode, personaLabel } = usePersonaInsights();
   const isStandardPersona = personaMode === "standard_bride" || personaMode === "standard_groom";
+  // 개인화(P2) — 페르소나별 "내 상황" 한 줄을 업체에 함께 전달(제출 시 note 에 첨부, 토글로 끌 수 있음).
+  // note state 에 직접 넣지 않아 draft(작성중 복원) 로직을 오염시키지 않는다. 특성 없는 모드면 null.
+  const personaContext = quotePersonaContext(personaMode);
+  const [attachContext, setAttachContext] = useState(true);
   const [category, setCategory] = useState(params.get("category") ?? "");
   const boardSlot = params.get("slot"); // 업체 보드 슬롯에서 진입 시 — 성공하면 그 슬롯을 '견적중'으로
   const [city, setCity] = useState("");
@@ -113,6 +118,15 @@ const QuoteNew = () => {
     }
   };
 
+  // 제출용 note — 사용자 메모 + (토글 ON·특성 페르소나면) '내 상황' 컨텍스트 첨부.
+  const buildNote = (): string | null => {
+    const base = note.trim();
+    if (attachContext && personaContext) {
+      return `${base ? base + "\n\n" : ""}[내 상황] ${personaContext}`;
+    }
+    return base || null;
+  };
+
   const submit = async () => {
     if (!user) { navigate("/auth"); return; }
     if (!category) { toast.error("카테고리를 골라주세요."); return; }
@@ -125,7 +139,7 @@ const QuoteNew = () => {
       budgetMax: budgetMax ? parseInt(budgetMax, 10) : null,
       weddingDate: weddingDate || null,
       style: style || null,
-      note: note.trim() || null,
+      note: buildNote(),
       imagePaths,
     });
     setSubmitting(false);
@@ -153,11 +167,28 @@ const QuoteNew = () => {
         <p className="text-[13px] text-muted-foreground">
           필요한 정보를 남기면 조건에 맞는 업체들에게 한 번에 견적을 요청해요. 업체가 답하면 알림으로 알려드려요.
         </p>
-        {!isStandardPersona && (
+        {personaContext ? (
+          // 특성 페르소나 — 내 상황을 업체에 함께 전달(토글). 직접 안 적어도 매칭 신호가 됨.
+          <div className="rounded-lg bg-primary/5 px-3 py-2.5 space-y-1.5">
+            <label className="flex items-start gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={attachContext}
+                onChange={(e) => setAttachContext(e.target.checked)}
+                className="mt-0.5 w-4 h-4 accent-primary shrink-0"
+                aria-label="내 상황을 업체에 함께 전달"
+              />
+              <span className="text-[12px] text-foreground">
+                <span className="font-semibold text-primary">{personaLabel}</span> 상황을 업체에 함께 전달할게요
+                <span className="block text-muted-foreground mt-0.5">“{personaContext}”</span>
+              </span>
+            </label>
+          </div>
+        ) : !isStandardPersona ? (
           <p className="text-[12px] text-primary bg-primary/5 rounded-lg px-3 py-2">
             {personaLabel} 조건(예산·규모·일정 등)도 메모에 적어주시면 맞는 업체에게 우선 전달돼요.
           </p>
-        )}
+        ) : null}
 
         <div className="space-y-1.5">
           <Label className="text-sm font-medium">어떤 업체를 찾으세요? *</Label>
