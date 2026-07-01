@@ -43,6 +43,8 @@ interface BuildSdmPromptArgs {
   /** 촬영 컷 — 전신/상반신/클로즈업. 상반신·클로즈업은 다리를 렌더하지 않는다. */
   shotType: ShotType;
   referenceMode: SdmReferenceMode;
+  /** 신부(기본) vs 신랑. 신랑은 드레스→예복, 메이크업→그루밍. */
+  gender?: "bride" | "groom";
 }
 
 // 드레스 길이 → 발 노출 정책. 롱/플로어는 자락이 바닥까지 → 발이 가려져도 정상.
@@ -62,6 +64,49 @@ export function buildSdmPrompt(args: BuildSdmPromptArgs): string {
 
   const dressByImage = !dressCustom && referenceMode === "image";
   const longGown = isLongGown(dressLength);
+
+  // 신랑(예복+그루밍+남성헤어) — 별도 조립. 신부 프롬프트는 아래 그대로 보존(회귀 0).
+  if (args.gender === "groom") {
+    const gRefs = ["- Image 1: the groom (user's photo). His identity is the single source of truth."];
+    if (dressByImage) gRefs.push("- Image 2: the wedding suit on a headless mannequin. Use ONLY the suit, NOT any body or face.");
+    const suit = dressDescription.trim() || "a classic well-fitted Korean wedding suit, notch lapel, navy or black";
+    const gVenue = scene.promptBlock.replace(/\bbride\b/gi, "groom").replace(/\bher\b/gi, "his").replace(/\bshe\b/gi, "he");
+    return `You are generating a single photorealistic Korean groom portrait that combines
+the chosen background, grooming, hairstyle and suit into ONE final look.
+
+REFERENCES
+${gRefs.join("\n")}
+
+TOP PRIORITY — IDENTITY MATCH (most important rule)
+The face must be UNMISTAKABLY the same person as Image 1 — instantly recognizable.
+Reproduce his exact eyes (shape, slant, eyelid type, spacing), eyebrows, nose,
+lips, jawline, chin, cheekbones, hairline, skin tone/undertone, and any moles or
+freckles. Do NOT beautify the face, enlarge eyes, or average toward a generic AI
+groom model. This overrides every instruction below.
+
+${shotFramingBlock(shotType, false)}
+Keep his recognizable build and identity; render a clean, well-tailored line
+within the framing above. Never doll-like / chibi proportions.
+
+GROOMING — clean, wedding-ready (NOT makeup)
+Neat groomed skin and brows; keep any facial hair neatly trimmed (do not add or
+remove it). Enhance only; keep his exact features, bone structure, skin tone and age.
+
+HAIR — restyle ONLY the hair
+Style his hair as: ${hairStyle.trim() || "a neat men's wedding hairstyle"}. Keep his face and identity unchanged.
+
+${dressByImage ? "SUIT — use the exact suit from Image 2" : "SUIT — render exactly as described below"}
+${suit}
+Reproduce the fit, lapel, buttons, shirt, tie or bow tie, pocket square, and fabric
+texture/sheen precisely. ${dressByImage ? "If Image 2 disagrees with the text, the suit in Image 2 wins." : "Do not invent a different silhouette or fabric."}
+
+BACKGROUND / SCENE
+${gVenue}
+
+OUTPUT
+One single composited image. No text, no watermark, no collage, no grid. No bouquet,
+veil, or bridal elements.`;
+  }
 
   // 첨부 이미지 역할 — Image 1 은 항상 신부. 드레스는 카탈로그+image 모드일 때만 이미지.
   const refs: string[] = ["- Image 1: the bride (user's photo). Her identity is the single source of truth."];
