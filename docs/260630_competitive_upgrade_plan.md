@@ -129,6 +129,14 @@
 가능일 입력하는 경량 캘린더**부터(B2B 파트너 화면). 공급 모이면 즉시예약으로 확장.
 - **신규 스키마**: `place_availability`(place_id·date·slot·status) + 파트너 입력 UI + 예약 RPC.
 - 난이도: **L** · 위험: 높음(공급·노쇼·동시성).
+- **구현 노트(260701-c) — 첫 조각(가능일 표시) 착수, 실시간 예약 거래는 이월**: 실시간 예약은
+  결제·노쇼정책·동시성이라 위험. 그 전 단계 **"가능일 표시"**만: `place_availability`(place_id·date·
+  status[available/booked/limited], PK(place_id,date)) + RLS(공개 read / 소유자만 write, WITH CHECK
+  로 places 소유 확인). 파트너 월 캘린더(`/business/availability`, 탭→상태 순환) + 소비자 상세 카드
+  (`HallAvailabilityCard`, wedding_hall 전용). **개인화**: 경쟁사 일반 달력이 아니라 소비자 예식
+  예정일(wedding_date)에 이 홀이 가능한지 먼저 안내. 데이터 없으면 카드 숨김(dead-end 방지).
+  구현: 마이그 20260701020000·hallAvailability(lib+7테스트)·useHallAvailability·BusinessAvailability·
+  HallAvailabilityCard. **실시간 예약 거래(결제·노쇼)는 이월.**
 
 ### 3-C. 박람회 연동 · 사람 플래너 매칭
 경쟁사: 아이웨딩 전담플래너·웨딩북 혜택. **Dewy 현실**: 운영/제휴 선행. 경량화 = **Dewy 자체

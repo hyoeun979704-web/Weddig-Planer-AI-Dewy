@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Building2, Image, MessageSquare, Edit, Eye, Heart, CheckCircle2, AlertCircle, ChevronRight, Clock, Ticket, Megaphone, Package, Star, Inbox, Palette, BookOpen, ListChecks } from "lucide-react";
+import { ArrowLeft, Building2, Image, MessageSquare, Edit, Eye, Heart, CheckCircle2, AlertCircle, ChevronRight, Clock, Ticket, Megaphone, Package, Star, Inbox, Palette, BookOpen, ListChecks, CalendarCheck } from "lucide-react";
 import { DESIGN_MARKET_ENABLED } from "@/lib/featureFlags";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -245,6 +245,16 @@ const BusinessDashboard = () => {
       href: "/business/gallery",
       badge: null,
     },
+    // 예식장 전용 — 날짜별 예약 가능/마감을 소비자 상세에 노출(예식일 맞는 신부에게 우선 안내).
+    ...(businessProfile.service_category === "wedding_hall"
+      ? [{
+          icon: CalendarCheck,
+          label: "예약 가능일",
+          description: "날짜별 가능/마감 등록 · 상세페이지 노출",
+          href: "/business/availability",
+          badge: null,
+        }]
+      : []),
     {
       icon: Ticket,
       label: "쿠폰 관리",

@@ -38,6 +38,7 @@ import PlaceMap from "@/components/detail/PlaceMap";
 import PlaceRecommendations from "@/components/detail/PlaceRecommendations";
 import PlaceKeyFacts from "@/components/detail/PlaceKeyFacts";
 import RegionalPriceGuide from "@/components/detail/RegionalPriceGuide";
+import HallAvailabilityCard from "@/components/detail/HallAvailabilityCard";
 import PlaceInquirySheet from "@/components/place/PlaceInquirySheet";
 import AddToBoardButton from "@/components/place/AddToBoardButton";
 import { supabase } from "@/integrations/supabase/client";
@@ -588,6 +589,8 @@ function BasicTab({
         <PlaceKeyFacts place={place} />
         {/* 지역 가격 가이드 — 큐레이션 지역 평균 + 내 예산 위치(가격 투명성, 참고용). */}
         <RegionalPriceGuide place={{ category: place.category, city: place.city }} />
+        {/* 예약 가능일(홀 전용) — 내 예식 예정일 가능 여부 개인화. 데이터 없으면 숨김. */}
+        {place.category === "wedding_hall" && <HallAvailabilityCard placeId={place.id} />}
         {/* 결혼식장 anchor 등록 CTA — wedding_hall 카테고리에만 표시.
             식장 상세를 보던 흐름 그대로 1탭 등록(§1 L5 JIT). */}
         {place.category === "wedding_hall" && (

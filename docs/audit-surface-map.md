@@ -58,6 +58,7 @@
 - **리뷰 관리** (`/business/reviews`) — 답글·평점필터·정렬·답글률
 - 쿠폰 (`/business/coupons`) · 이벤트 (`/business/events`)
 - 리드 (`/business/leads`) · 문의 (`/business/inquiries`) · 배송/전달 (`/business/deliveries`)
+- **예약 가능일** (`/business/availability`) — 예식장 전용, 날짜별 가능/마감 입력 → 소비자 상세 노출
 - 디자인(청첩장 디자이너) (`/business/designs`) · 가이드 (`/business/guide /business/guides`)
 
 ## C. 운영자 (Admin) — 관리 항목 전수

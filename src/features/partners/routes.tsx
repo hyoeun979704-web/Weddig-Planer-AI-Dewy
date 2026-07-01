@@ -23,6 +23,7 @@ const BusinessDeliveries = lazy(() => import("@/features/partners/pages/Business
 const BusinessDesigns = lazy(() => import("@/features/partners/pages/BusinessDesigns"));
 const BusinessReviews = lazy(() => import("@/features/partners/pages/BusinessReviews"));
 const BusinessLeads = lazy(() => import("@/features/partners/pages/BusinessLeads"));
+const BusinessAvailability = lazy(() => import("@/features/partners/pages/BusinessAvailability"));
 
 const PartnersRoutes = () => (
   <Routes>
@@ -48,6 +49,7 @@ const PartnersRoutes = () => (
       path="designs"
       element={DESIGN_MARKET_ENABLED ? <BusinessGuard requireApproved><BusinessDesigns /></BusinessGuard> : <Navigate to="/business/dashboard" replace />}
     />
+    <Route path="availability" element={<BusinessGuard requireApproved><BusinessAvailability /></BusinessGuard>} />
     <Route path="reviews" element={<BusinessGuard requireApproved><BusinessReviews /></BusinessGuard>} />
     <Route path="leads" element={<BusinessGuard requireApproved><BusinessLeads /></BusinessGuard>} />
   </Routes>
