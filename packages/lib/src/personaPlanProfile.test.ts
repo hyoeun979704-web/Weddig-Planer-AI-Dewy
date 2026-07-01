@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { applyPersonaSchedule, PERSONA_SCHEDULE_PROFILES } from "./personaPlanProfile";
-import { buildTimelinePhases } from "./schedule";
+import { buildTimelinePhases, WEDDING_EXPO_TASK } from "./schedule";
 
 const phases = () => buildTimelinePhases(365);
 
@@ -60,6 +60,19 @@ describe("personaPlanProfile/applyPersonaSchedule", () => {
     expect(self.find((p) => p.id === "4")!.defaultTasks).not.toContain("하객 인원 확정(식대·답례품 수량)");
     const noWed = applyPersonaSchedule(phases(), "no_wedding_travel");
     expect(noWed.find((p) => p.id === "2")!.defaultTasks).not.toContain("본식 사진·영상(DVD) 예약");
+  });
+
+  it("웨딩박람회 관람: 표준 phase1 에 있고, 식 없는 페르소나(self/no_wedding)는 제거(B5b)", () => {
+    // 기본(표준)엔 박람회 관람 추천이 phase 1 에 노출된다.
+    expect(phases().find((p) => p.id === "1")!.defaultTasks).toContain(WEDDING_EXPO_TASK);
+    // 필요 없는 페르소나는 건너뛴다.
+    const self = applyPersonaSchedule(phases(), "self_no_ceremony");
+    expect(self.find((p) => p.id === "1")!.defaultTasks).not.toContain(WEDDING_EXPO_TASK);
+    const noWed = applyPersonaSchedule(phases(), "no_wedding_travel");
+    expect(noWed.find((p) => p.id === "1")!.defaultTasks).not.toContain(WEDDING_EXPO_TASK);
+    // 관련 있는 페르소나(예산형)는 유지.
+    const budget = applyPersonaSchedule(phases(), "budget_analytic");
+    expect(budget.find((p) => p.id === "1")!.defaultTasks).toContain(WEDDING_EXPO_TASK);
   });
 
   it("해외/국제는 일정 개인화에서 제외(표준 그대로)", () => {

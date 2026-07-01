@@ -18,6 +18,11 @@ export interface TimelinePhase {
   endDay: number;    // phase 종료 D-day (작은 값, D-Day = 0)
 }
 
+// 웨딩박람회 관람 추천 태스크 — phase 1(초반 탐색)에서 스드메·혜택을 한 번에 비교하는 동선.
+// 페르소나 조건부: 식이 없는 self_no_ceremony·no_wedding_travel 은 personaPlanProfile 에서 제거한다
+// (박람회는 예식·스드메 중심이라 불필요). remove 는 정확 문자열 일치라 이 상수를 단일 소스로 공유.
+export const WEDDING_EXPO_TASK = "웨딩박람회 관람 — 스드메·혜택 한 번에 비교";
+
 // 표준(365일+) phase 윈도우. 압축 모드(4·6·8개월)는 buildTimelinePhases() 에서
 // 비율에 맞춰 동적 계산. 이 표는 "12개월 이상" 기준의 anchor.
 const STANDARD_PHASES: Array<Omit<TimelinePhase, "period" | "defaultDaysBeforeWedding" | "startDay" | "endDay"> & {
@@ -30,7 +35,7 @@ const STANDARD_PHASES: Array<Omit<TimelinePhase, "period" | "defaultDaysBeforeWe
     title: "웨딩 준비 시작",
     description: "예산 설정 및 웨딩홀 탐색",
     icon: Heart,
-    defaultTasks: ["전체 예산 설정하기", "웨딩 스타일 결정하기", "웨딩홀 리스트업", "웨딩플래너 상담", "상견례 — 양가 첫 인사·방향 합의"],
+    defaultTasks: ["전체 예산 설정하기", "웨딩 스타일 결정하기", "웨딩홀 리스트업", WEDDING_EXPO_TASK, "웨딩플래너 상담", "상견례 — 양가 첫 인사·방향 합의"],
     category: "phase-1",
     startRatio: 0,
     endRatio: 0.5,

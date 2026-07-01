@@ -10,6 +10,7 @@ import RecapMilestoneCard from "./RecapMilestoneCard";
 import BudgetVsAverageCard from "./BudgetVsAverageCard";
 import RecommendedSection from "./RecommendedSection";
 import PersonaRecommendationRows from "./PersonaRecommendationRows";
+import HomeExpoDealsRow from "./HomeExpoDealsRow";
 import InvitationTemplateSection from "./InvitationTemplateSection";
 import StudioGallery from "./StudioGallery";
 import TipsSection from "./TipsSection";
@@ -51,6 +52,8 @@ const TabContent = ({ activeTab }: TabContentProps) => {
         <HomeCategoryGrid />
         {/* 단일 추천 행 → 페르소나별 카테고리 행 스택(Netflix식)으로 교체. */}
         <PersonaRecommendationRows />
+        {/* 온라인 박람회·혜택 진입점(B5) — 페르소나 매칭 큐레이션 행. 혜택 0건이면 자동 숨김. */}
+        <HomeExpoDealsRow />
         <InvitationTemplateSection />
         <TipsSection activeTab={activeTab} />
         <CommunityChatterSection />
