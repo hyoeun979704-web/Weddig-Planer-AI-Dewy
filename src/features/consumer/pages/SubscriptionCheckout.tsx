@@ -8,6 +8,7 @@ import { openExternal } from "@/lib/native/openExternal";
 import { toast } from "sonner";
 import { safeSessionStorage } from "@/lib/safeSessionStorage";
 import { getPaymentProvider, purchaseSubscriptionIap, subscriptionIapPrice, iapStoreName } from "@/lib/payments";
+import { MINOR_PAYMENT_NOTICE } from "@/lib/legalNotices";
 
 type PlanType = "trial" | "monthly" | "yearly";
 
@@ -196,6 +197,10 @@ const SubscriptionCheckout = () => {
               </>
             )}
           </div>
+        )}
+
+        {provider !== "unavailable" && (
+          <p className="text-[11px] text-muted-foreground px-1">{MINOR_PAYMENT_NOTICE}</p>
         )}
 
         {/* 구독 필수 고지 링크(App Store 3.1.2 / Google Play) — 약관·개인정보처리방침 인앱 기능 링크. */}

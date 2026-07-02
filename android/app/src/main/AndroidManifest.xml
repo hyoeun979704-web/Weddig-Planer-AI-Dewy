@@ -84,4 +84,8 @@
          이며 Play Console 데이터 보안 폼의 광고 ID 수집 선언과 매칭. 권한 없으면
          광고 ID 가 0 으로 처리 → 광고/분석 수익 손실 + Play Console 오류. -->
     <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
+    <!-- WebView geolocation(근처 식장 JIT 추천 카드). manifest 권한이 없으면 Android WebView 는
+         웹 geolocation 요청을 무조건 거부해 카드의 "네, 좋아요"가 100% 실패한다(감사 260702).
+         시도 단위 근사만 쓰므로 COARSE 로 충분 — FINE 미요청(최소 수집). -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 </manifest>

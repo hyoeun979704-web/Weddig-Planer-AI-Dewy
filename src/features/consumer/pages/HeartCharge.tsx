@@ -9,6 +9,7 @@ import { openExternal } from "@/lib/native/openExternal";
 import { toast } from "sonner";
 import { safeSessionStorage } from "@/lib/safeSessionStorage";
 import { getPaymentProvider, purchaseHeartsIap, heartIapPrice, iapStoreName } from "@/lib/payments";
+import { MINOR_PAYMENT_NOTICE } from "@/lib/legalNotices";
 import {
   HEART_PACKAGES,
   HeartPackage,
@@ -38,10 +39,16 @@ const HeartCharge = () => {
       navigate("/auth");
       return;
     }
+    // iOS IAP 미오픈 빌드: 가격표만 보이고 결제가 안 되는 화면은 심사 2.1(미완성) 소지 —
+    // 직접 URL 진입도 /points 로 돌려보낸다(감사 260702). 진입 버튼은 이미 게이트돼 있음.
+    if (provider === "unavailable") {
+      navigate("/points", { replace: true });
+      return;
+    }
     (async () => {
       setIsStarterUsed(await fetchStarterUsed(user.id));
     })();
-  }, [user, navigate]);
+  }, [user, navigate, provider]);
 
   const handleSelect = (pkg: HeartPackage) => {
     if (pkg.firstOnly && isStarterUsed) return;
@@ -222,6 +229,7 @@ const HeartCharge = () => {
           <p>• 결제 완료 시 즉시 하트가 충전되며, <b>1회성 결제</b>로 정기결제(자동결제)가 아니에요.</p>
           <p>• 콘텐츠 생성에 실패한 경우 사용한 하트는 자동 환불돼요.</p>
           <p>• 미사용 하트 환불은 전자상거래법 및 <button onClick={() => navigate("/terms")} className="underline">이용약관</button>의 청약철회 규정을 따라요.</p>
+          <p>• {MINOR_PAYMENT_NOTICE}</p>
         </div>
       </main>
 

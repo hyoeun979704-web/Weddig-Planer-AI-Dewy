@@ -12,6 +12,7 @@ import {
 } from "@/features/consumer/data/invitation";
 import { useAuth } from "@/contexts/AuthContext";
 import { getPaymentProvider } from "@/lib/payments";
+import { MINOR_PAYMENT_NOTICE } from "@/lib/legalNotices";
 import { toast } from "sonner";
 import { ORDER_SESSION_KEY } from "@/features/consumer/pages/Checkout";
 import { computeDesignCharge } from "@/lib/designPricing";
@@ -36,6 +37,9 @@ const InvitationMarket = () => {
   const [selected, setSelected] = useState<DesignCard | null>(null);
   const [usePoints, setUsePoints] = useState(0);
   const [buying, setBuying] = useState(false);
+  // 전자상거래법 제17조: 디지털 콘텐츠 청약철회 제한은 사전 고지+동의가 있어야 주장할 수 있다
+  // (하트 충전과 동일 패턴). 다이얼로그 열 때마다 초기화.
+  const [agreed, setAgreed] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -61,7 +65,7 @@ const InvitationMarket = () => {
   const openBuy = (d: DesignCard) => {
     if (!user) { toast.error("로그인이 필요해요"); return; }
     if (!canBuyDesign) { toast("현재 앱에서는 디자인 구매를 이용할 수 없어요."); return; }
-    setSelected(d); setUsePoints(0);
+    setSelected(d); setUsePoints(0); setAgreed(false);
   };
 
   const charge = selected ? computeDesignCharge(selected.price, usePoints, balance) : null;
@@ -117,8 +121,12 @@ const InvitationMarket = () => {
                   <div className="bg-card rounded-2xl border border-border overflow-hidden">
                     <div className="aspect-[3/4] bg-muted relative">
                       {d.preview_urls?.[0] && <img src={d.preview_urls[0]} alt={d.title} className="w-full h-full object-cover" />}
+                      {/* 네이티브(구매 불가)에선 원화 가격 미표시 — 결제 불가 상품의 가격 노출은
+                          심사 2.1/3.1.1 질의 소지(감사 260702). 잠금 아이콘만 유지. */}
                       <span className="absolute top-1.5 right-1.5 inline-flex items-center gap-0.5 rounded-full bg-black/55 px-1.5 py-0.5 text-[10px] font-bold text-white">
-                        {owned ? <><Check className="w-2.5 h-2.5" /> 보유</> : <><Lock className="w-2.5 h-2.5" /> {d.price.toLocaleString()}원</>}
+                        {owned
+                          ? <><Check className="w-2.5 h-2.5" /> 보유</>
+                          : <><Lock className="w-2.5 h-2.5" />{canBuyDesign ? ` ${d.price.toLocaleString()}원` : null}</>}
                       </span>
                     </div>
                     <div className="p-2.5">
@@ -163,13 +171,26 @@ const InvitationMarket = () => {
                 <span className="font-semibold">최종 결제</span>
                 <span className="font-bold text-primary">{charge.final.toLocaleString()}원</span>
               </div>
-              <Button className="w-full h-11" onClick={onBuy} disabled={buying}>
+              <label className="flex items-start gap-2 text-[11px] text-muted-foreground">
+                <input
+                  type="checkbox"
+                  checked={agreed}
+                  onChange={(e) => setAgreed(e.target.checked)}
+                  className="mt-0.5 shrink-0"
+                />
+                <span>
+                  디자인은 디지털 콘텐츠로 구매 즉시 제공되며, 제공이 시작되면 청약철회가 제한될 수
+                  있음에 동의합니다. (전자상거래법 제17조)
+                </span>
+              </label>
+              <Button className="w-full h-11" onClick={onBuy} disabled={buying || !agreed}>
                 {buying ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-1.5" />}
                 구매하고 사용하기
               </Button>
               <p className="text-[11px] text-muted-foreground text-center">
                 구매 시 이용범위는 작가가 정한 라이선스를 따릅니다(본인 결혼식용, 재판매 금지).
               </p>
+              <p className="text-[11px] text-muted-foreground text-center">{MINOR_PAYMENT_NOTICE}</p>
             </div>
           )}
         </DialogContent>

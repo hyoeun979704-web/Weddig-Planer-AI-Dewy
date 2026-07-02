@@ -113,7 +113,7 @@ const Privacy = () => {
               </tr>
               <tr>
                 <td className="border border-border p-2">AI 결과물</td>
-                <td className="border border-border p-2">탈퇴 시까지</td>
+                <td className="border border-border p-2">생성 후 30일(자동 삭제)</td>
                 <td className="border border-border p-2">본인 동의</td>
               </tr>
               <tr>
@@ -170,15 +170,19 @@ const Privacy = () => {
               </tr>
               <tr>
                 <td className="border border-border p-2">Google LLC</td>
-                <td className="border border-border p-2">AI 챗봇·문구 추천(Gemini)</td>
+                <td className="border border-border p-2">AI 챗봇·문구 추천 및 업로드 사진 품질 검사(Gemini)</td>
               </tr>
               <tr>
                 <td className="border border-border p-2">Kaleido AI GmbH (remove.bg)</td>
                 <td className="border border-border p-2">청첩장 사진 배경 제거(누끼)</td>
               </tr>
               <tr>
-                <td className="border border-border p-2">PortOne 및 연동 PG사</td>
-                <td className="border border-border p-2">결제 처리</td>
+                <td className="border border-border p-2">㈜카카오페이</td>
+                <td className="border border-border p-2">결제 처리(웹 결제)</td>
+              </tr>
+              <tr>
+                <td className="border border-border p-2">Google LLC·Apple Inc.</td>
+                <td className="border border-border p-2">인앱결제 처리(Google Play·App Store)</td>
               </tr>
               <tr>
                 <td className="border border-border p-2">Vercel Inc.</td>
@@ -208,6 +212,11 @@ const Privacy = () => {
             <li>이전 국가: 미국 등 (각 사업자 운영 국가)</li>
             <li>이전 시점: 서비스 이용 시점</li>
             <li>보유 기간: 본 방침의 보유 기간 또는 위탁사의 자체 기준에 따름</li>
+            <li>이전받는 자의 연락처: 각 사 개인정보처리방침 페이지(OpenAI·Google·Kaleido AI·Supabase·Vercel)를
+              통해 확인할 수 있습니다.</li>
+            <li>이전 거부 방법: AI 기능(AI Studio·AI Planner)을 이용하지 않으면 사진·채팅 내용은
+              이전되지 않습니다. 이전 거부·문의는 개인정보 보호책임자(아래 11항)에게 요청할 수
+              있으며, 다만 거부 시 해당 AI 기능 이용이 제한됩니다.</li>
           </ul>
         </Section>
 

@@ -18,7 +18,9 @@ import {
   AlertCircle,
   X,
   Expand,
+  Flag,
 } from "lucide-react";
+import ReportDialog from "@/components/community/ReportDialog";
 import { FavoriteButton } from "@/components/FavoriteButton";
 import { openExternal } from "@/lib/native/openExternal";
 import { Button } from "@/components/ui/button";
@@ -1043,6 +1045,8 @@ function ReviewTab({
 }
 
 function ReviewCard({ review, viewerRegion }: { review: PlaceReview; viewerRegion?: string | null }) {
+  // 후기도 UGC — 신고 수단 필수(App Store 1.2). community_reports(target_type='review') 재사용.
+  const [reportOpen, setReportOpen] = useState(false);
   const tierMeta = review.verification_tier ? VERIFICATION_TIER_META[review.verification_tier] : null;
   const isLocal = regionMatches(review.author_region, viewerRegion);
   const date = review.review_date
@@ -1117,7 +1121,22 @@ function ReviewCard({ review, viewerRegion }: { review: PlaceReview; viewerRegio
           <span> {review.helpful_count}</span>
         )}
         {review.hall_name && <span>{review.hall_name}</span>}
+        <button
+          type="button"
+          onClick={() => setReportOpen(true)}
+          aria-label="후기 신고"
+          className="ml-auto inline-flex items-center gap-1 min-h-[44px] px-1 -my-2 hover:text-foreground"
+        >
+          <Flag className="w-3 h-3" />
+          신고
+        </button>
       </div>
+      <ReportDialog
+        open={reportOpen}
+        onOpenChange={setReportOpen}
+        targetType="review"
+        targetId={review.review_id}
+      />
     </div>
   );
 }
