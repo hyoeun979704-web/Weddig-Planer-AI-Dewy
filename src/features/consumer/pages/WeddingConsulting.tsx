@@ -15,6 +15,7 @@ import {
   type ConsultingSectionKey,
 } from "@/features/consumer/data/weddingConsulting";
 import { toast } from "@/hooks/use-toast";
+import { studioErrorMessage } from "@/lib/studioErrors";
 import { confirm } from "@/components/ui/confirm-dialog";
 import { addPendingJob } from "@/lib/pendingJobs";
 
@@ -139,11 +140,11 @@ const WeddingConsulting = () => {
       setDiscounted(false);
       navigate(`/ai-studio/consulting/result/${reportId}`);
     } catch (e) {
-      toast({
-        title: "컨설팅 요청 실패",
-        description: e instanceof Error ? e.message : "오류",
-        variant: "destructive",
-      });
+      const msg = e instanceof Error ? e.message : "오류";
+      // 결제 전 게이트(no_face 등)·중복 제출 코드를 한국어 안내로 매핑.
+      const known = studioErrorMessage(msg);
+      if (known) toast({ title: known.title, description: known.description, variant: "destructive" });
+      else toast({ title: "컨설팅 요청 실패", description: msg, variant: "destructive" });
     } finally {
       setProcessing(false);
     }

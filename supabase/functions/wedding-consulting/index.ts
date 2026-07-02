@@ -10,6 +10,7 @@
 // verify_jwt=false: START 는 수동 getClaims, BOARD 는 x-internal-secret(서비스 롤 키) 검사.
 
 import { MODELS } from "../_shared/llm.ts";
+import { precheckSourceImage, hasRecentPendingJob } from "../_shared/studioEdge.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -424,6 +425,16 @@ serve(async (req) => {
     if (!OPENAI_API_KEY) return json({ error: "openai_not_configured" }, 500);
     const MODEL = Deno.env.get("OPENAI_CONSULT_MODEL") ?? "gpt-5.5-2026-04-23";
 
+    // 이중 제출 가드(15초) + 결제 전 사진 품질 게이트(fail-open) — 30하트 최고 단가라
+    // 무효 사진(얼굴 없음/다인/완전 가림)을 차감 전에 반려. 원본은 분석 단계에서 재사용.
+    if (await hasRecentPendingJob(admin, "wedding_consulting_reports", userId)) {
+      return json({ error: "duplicate_request" }, 409);
+    }
+    const { data: sourceBlob } = await admin.storage.from("invitation-uploads").download(sourcePath);
+    if (!sourceBlob) return json({ error: "source_download_failed" }, 400);
+    const precheckFail = await precheckSourceImage(sourceBlob, Deno.env.get("GEMINI_API_KEY"));
+    if (precheckFail) return json({ error: precheckFail }, 400);
+
     // 첫 1회 50% 할인 + 과금
     const { data: usageRow } = await admin
       .from("wedding_consulting_usage").select("used_count").eq("user_id", userId).maybeSingle();
@@ -476,11 +487,10 @@ serve(async (req) => {
               { role: "user", content: [
                 { type: "input_text", text: `이 ${gender === "groom" ? "신랑" : "신부"} 사진을 분석해 위 JSON 을 채워줘.` },
                 { type: "input_image", image_url: await (async () => {
-                  const { data: b } = await admin.storage.from("invitation-uploads").download(sourcePath);
-                  if (!b) return "";
-                  const buf = new Uint8Array(await b.arrayBuffer());
+                  // 원본은 품질 게이트 단계에서 이미 받아둠(sourceBlob) — 재다운로드 없음.
+                  const buf = new Uint8Array(await sourceBlob.arrayBuffer());
                   let bin = ""; for (let i = 0; i < buf.length; i++) bin += String.fromCharCode(buf[i]);
-                  return `data:${b.type || "image/png"};base64,${btoa(bin)}`;
+                  return `data:${sourceBlob.type || "image/png"};base64,${btoa(bin)}`;
                 })() },
               ] },
             ],

@@ -6,6 +6,7 @@ import PhotoUploadConsent from "@/components/PhotoUploadConsent";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
+import { studioErrorMessage } from "@/lib/studioErrors";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchHeartBalance } from "@/features/consumer/data/hearts";
 import {
@@ -166,7 +167,12 @@ const SdmPreview = () => {
     } catch (err) {
       const msg = err instanceof Error ? err.message : "알 수 없는 오류";
       if (msg.includes("insufficient_hearts")) { toast({ title: "하트가 부족해요", variant: "destructive" }); navigate("/points"); }
-      else toast({ title: "오류", description: msg, variant: "destructive" });
+      else {
+        // 결제 전 게이트(no_face 등)·중복 제출 코드를 한국어 안내로 매핑.
+        const known = studioErrorMessage(msg);
+        if (known) toast({ title: known.title, description: known.description, variant: "destructive" });
+        else toast({ title: "오류", description: msg, variant: "destructive" });
+      }
     } finally {
       setIsGenerating(false);
     }

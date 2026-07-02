@@ -21,6 +21,7 @@ import {
   hairRecommendRole,
   subjectFileName,
 } from "../_shared/subjectPrompt.ts";
+import { precheckSourceImage, hasRecentPendingJob } from "../_shared/studioEdge.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { encode as base64Encode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -177,6 +178,15 @@ serve(async (req) => {
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
     if (!OPENAI_API_KEY) return json({ error: "openai_not_configured" }, 500);
 
+    // 이중 제출 가드(15초) + 결제 전 사진 품질 게이트(fail-open). 원본은 잡에서 재사용.
+    if (await hasRecentPendingJob(admin, "hair_preview_jobs", userId)) {
+      return json({ error: "duplicate_request" }, 409);
+    }
+    const { data: sourceBlob } = await admin.storage.from("invitation-uploads").download(sourcePath);
+    if (!sourceBlob) return json({ error: "source_download_failed" }, 400);
+    const precheckFail = await precheckSourceImage(sourceBlob, Deno.env.get("GEMINI_API_KEY"));
+    if (precheckFail) return json({ error: precheckFail }, 400);
+
     const { data: usageRow } = await admin
       .from("hair_preview_usage").select("used_count").eq("user_id", userId).maybeSingle();
     const usedCount = usageRow?.used_count ?? 0;
@@ -208,8 +218,8 @@ serve(async (req) => {
 
     const job = (async () => {
       try {
-        const { data: blob } = await admin.storage.from("invitation-uploads").download(sourcePath);
-        if (!blob) { await refund(finalCost); await finish({ status: "failed", error: "source_download_failed", charged: 0 }); return; }
+        // 원본은 품질 게이트 단계에서 이미 받아둠(sourceBlob) — 재다운로드 없음.
+        const blob = sourceBlob;
 
         // 업로드 사진 분석에 쓸 base64(스타일/컬러 추천용). Gemini 키 없으면 추천 생략→고정목록.
         const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");

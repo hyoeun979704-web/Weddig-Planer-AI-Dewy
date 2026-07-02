@@ -228,12 +228,16 @@
 
 ## 5. 남은 작업 (deferred 로드맵, 우선순위순)
 
-1. **P1 사진 품질 사전 게이트**(하트 차감 전): 얼굴 1개·최소 해상도·블러·가림 검사(경쟁 전앱
-   공통 — CS·환불 분쟁 예방). Gemini Flash 저비용 판정 or 클라 얼굴검출.
-2. **P1 OpenAI 재시도/백오프**: `callImageEdit` 에 429/5xx 1회 재시도(공용화로 이제 1곳 수정).
-3. **P1 이중클릭 멱등성**: 요청 idempotency key(클라 UUID) 또는 진행중 잡 존재 검사.
-4. **P2 에러코드 매핑 통일**: dress/sdm/makeup 데이터 레이어도 `error.context.json()` 파싱
-   (photoFix 패턴 재사용) — 하트 부족 UX 일관화.
+1. ~~**P1 사진 품질 사전 게이트**~~ ✅ 적용(260702 후속 PR): `studioEdge.precheckSourceImage`
+   — Gemini Flash 로 얼굴 0개/다인/완전 가림만 보수적으로 반려(fail-open, 하트 차감 전).
+   스튜디오 5함수 + 헤어 + 컨설팅에 배선. 블러 등 애매 신호는 오차단 방지 위해 미차단.
+2. ~~**P1 OpenAI 재시도/백오프**~~ ✅ 적용: `callImageEdit` 이 429/5xx·네트워크 실패에 2초 후
+   1회 재시도(월클럭 한도 내 — 재시도 폭주 금지).
+3. ~~**P1 이중클릭 멱등성**~~ ✅ 적용: `hasRecentPendingJob`(15초 내 pending/processing 잡
+   존재 시 409 duplicate_request, fail-open) — 하트 차감 전 검사, 7개 플로우 배선.
+4. ~~**P2 에러코드 매핑 통일**~~ ✅ 적용: `packages/lib/src/studioErrors.ts`(코드 추출
+   `toStudioError` + 한국어 안내 맵) — dress/sdm/makeup 데이터 레이어 + 7개 페이지 배선.
+   기존엔 FunctionsHttpError 의 제네릭 메시지 때문에 402 분기가 페이지에서 안 잡혔음.
 5. **P2 identity lock 문구 단일화**: subjectPrompt·fittingScenes·makeupScenes·sdmPrompt·
    consulting 6벌 → `studio/identity.ts` 한 벌(이번 이관으로 물리적 준비 완료).
 6. **P2 보관기간 수치 공시 + 처리 직후 원본 삭제**: 업로드 원본은 생성 완료 시 즉시 삭제

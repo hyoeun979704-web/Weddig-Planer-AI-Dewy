@@ -5,6 +5,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { createSignedUrl, uploadToBucket, SIGNED_URL_TTL } from "@/lib/storage";
+import { toStudioError } from "@/lib/studioErrors";
 
 const UPLOAD_BUCKET = "sdm-uploads";
 const RESULT_BUCKET = "sdm-results";
@@ -68,7 +69,7 @@ export async function fetchDressMeta(sampleId: string): Promise<Record<string, u
 /** dewy-sdm 호출 → preview_id 반환. error/응답 error/누락 시 throw(호출부가 메시지 분기). */
 export async function generateSdmPreview(body: Record<string, unknown>): Promise<string> {
   const { data, error } = await supabase.functions.invoke("dewy-sdm", { body });
-  if (error) throw error;
+  if (error) throw await toStudioError(error); // 코드 추출(@/lib/studioErrors)
   if ((data as { error?: string })?.error) throw new Error((data as { error: string }).error);
   const previewId = (data as { preview_id?: string })?.preview_id;
   if (!previewId) throw new Error("생성 요청 실패");
