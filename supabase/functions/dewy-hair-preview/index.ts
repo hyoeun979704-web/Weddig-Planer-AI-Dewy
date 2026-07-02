@@ -21,7 +21,7 @@ import {
   hairRecommendRole,
   subjectFileName,
 } from "../_shared/subjectPrompt.ts";
-import { precheckSourceImage, hasRecentPendingJob } from "../_shared/studioEdge.ts";
+import { precheckSourceImage, hasRecentPendingJob, hasHeartBalance } from "../_shared/studioEdge.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { encode as base64Encode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -171,7 +171,9 @@ serve(async (req) => {
     if (!sourcePath || !sourcePath.startsWith(`${userId}/`)) return json({ error: "invalid_source_path" }, 403);
     const options = Array.from(new Set((body.options ?? []).filter((o): o is Kind => VALID.includes(o as Kind))));
     if (options.length === 0) return json({ error: "no_options" }, 400);
-    const singleStyle = (body.single_style ?? "").toString();
+    // 자유 텍스트 살균(제어문자 제거) — 길이 상한은 singlePrompt 의 slice(0,160)가 담당.
+    const singleStyle = (body.single_style ?? "").toString()
+      .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "").trim();
     // 성별(신부/신랑) — 프론트가 내 role 기준으로 전달. 없으면 신부 기본(기존 동작·회귀 0).
     const gender = parseGender(body.gender);
 
@@ -181,6 +183,10 @@ serve(async (req) => {
     // 이중 제출 가드(15초) + 결제 전 사진 품질 게이트(fail-open). 원본은 잡에서 재사용.
     if (await hasRecentPendingJob(admin, "hair_preview_jobs", userId)) {
       return json({ error: "duplicate_request" }, 409);
+    }
+    // 잔액 선확인(읽기) — 잔액 0 사용자의 무료 게이트 폭주 차단(최소 1옵션 반값 기준).
+    if (!(await hasHeartBalance(admin, userId, Math.round(PER / 2)))) {
+      return json({ error: "insufficient_hearts" }, 402);
     }
     const { data: sourceBlob } = await admin.storage.from("invitation-uploads").download(sourcePath);
     if (!sourceBlob) return json({ error: "source_download_failed" }, 400);
@@ -212,8 +218,18 @@ serve(async (req) => {
     if (jobErr || !jobRow) { await refund(finalCost); return json({ error: "job_insert_failed" }, 500); }
     const jobId = jobRow.id as string;
 
-    const finish = async (patch: Record<string, unknown>) => {
-      await admin.from("hair_preview_jobs").update({ ...patch, updated_at: new Date().toISOString() }).eq("id", jobId);
+    // 상태 전이(processing→completed/failed)에서 이긴 호출만 환불 — reaper(10분 후
+    // processing 을 실패+환불 처리)와 겹쳐도 이중 환불이 안 난다. 기존 "환불 먼저 →
+    // finish 나중" 순서는 finish 실패/워커 킬 시 reaper 가 같은 금액을 또 환불했다.
+    const finishAndRefund = async (patch: Record<string, unknown>, refundAmt: number) => {
+      const { data: won, error } = await admin
+        .from("hair_preview_jobs")
+        .update({ ...patch, updated_at: new Date().toISOString() })
+        .eq("id", jobId)
+        .eq("status", "processing")
+        .select("id");
+      if (error || !won || won.length === 0) return; // 전이 패배 = reaper 등이 이미 정산
+      await refund(refundAmt);
     };
 
     const job = (async () => {
@@ -269,17 +285,15 @@ serve(async (req) => {
         const ok = results.length;
         const failed = options.length - ok;
         const refundAmt = failed > 0 ? (ok === 0 ? finalCost : Math.round((failed / options.length) * finalCost)) : 0;
-        await refund(refundAmt);
-        if (ok === 0) { await finish({ status: "failed", error: "all_failed", charged: 0 }); return; }
-        await finish({ status: "completed", results, charged: finalCost - refundAmt });
+        if (ok === 0) { await finishAndRefund({ status: "failed", error: "all_failed", charged: 0 }, finalCost); return; }
+        await finishAndRefund({ status: "completed", results, charged: finalCost - refundAmt }, refundAmt);
         await admin.from("hair_preview_usage").upsert(
           { user_id: userId, used_count: usedCount + 1, updated_at: new Date().toISOString() },
           { onConflict: "user_id" },
         );
       } catch (e) {
         console.error("hair job error:", e);
-        await refund(finalCost);
-        await finish({ status: "failed", error: "server_error", charged: 0 });
+        await finishAndRefund({ status: "failed", error: "server_error", charged: 0 }, finalCost);
       }
     })();
 

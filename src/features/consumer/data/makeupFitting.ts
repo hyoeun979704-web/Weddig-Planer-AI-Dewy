@@ -58,18 +58,6 @@ export async function fetchActiveMakeups(): Promise<Record<string, unknown>[]> {
   return (data ?? []) as unknown as Record<string, unknown>[];
 }
 
-/** 카탈로그 메이크업 메타데이터 전체 조회(프롬프트 주입용). 없으면 null. */
-export async function fetchMakeupMeta(sampleId: string): Promise<Record<string, unknown> | null> {
-  const { data } = await supabase
-    .from("makeup_samples")
-    .select(
-      "name, base_finish, lip_color, lip_finish, eye_style, eye_color, blush_color, blush_placement, brow_shape, contour_intensity, details, mood",
-    )
-    .eq("id", sampleId)
-    .maybeSingle();
-  return (data as Record<string, unknown> | null) ?? null;
-}
-
 /** dewy-makeup 호출 → fitting_id 반환. error/응답 error/누락 시 throw(호출부가 메시지 분기). */
 export async function generateMakeupFitting(body: Record<string, unknown>): Promise<string> {
   const { data, error } = await supabase.functions.invoke("dewy-makeup", { body });

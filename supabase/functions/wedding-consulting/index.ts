@@ -10,7 +10,7 @@
 // verify_jwt=false: START 는 수동 getClaims, BOARD 는 x-internal-secret(서비스 롤 키) 검사.
 
 import { MODELS } from "../_shared/llm.ts";
-import { precheckSourceImage, hasRecentPendingJob } from "../_shared/studioEdge.ts";
+import { precheckSourceImage, hasRecentPendingJob, hasHeartBalance } from "../_shared/studioEdge.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -131,7 +131,7 @@ const SHARED =
   "as the provided photo: reproduce her exact eyes (shape, size, slant, spacing, eyelid type: " +
   "monolid/double, crease height), eyebrows, nose (bridge height & width, tip, nostrils), lips " +
   "(shape, fullness, philtrum), jawline, chin, cheekbones, hairline, face length-to-width ratio, " +
-  "skin tone/undertone and any moles. Do NOT beautify, slim, enlarge eyes, or change age. Maintain " +
+  "skin tone/undertone and any moles or freckles. Do NOT beautify, slim, enlarge eyes, or change age. Maintain " +
   "perfect facial consistency across ALL panels — the identical face in every thumbnail, no drift, " +
   "no stylization. Ultra-realistic, sharp focus.\n" +
   "Korean must be correct and legible. HEADER BAND y0–9% (serif title left, EN subtitle " +
@@ -160,7 +160,7 @@ const SHARED_GROOM =
   "as the provided photo: reproduce his exact eyes (shape, size, slant, spacing, eyelid type: " +
   "monolid/double, crease height), eyebrows, nose (bridge height & width, tip, nostrils), lips " +
   "(shape, fullness, philtrum), jawline, chin, cheekbones, hairline, face length-to-width ratio, " +
-  "skin tone/undertone, any moles, and any existing facial hair. Do NOT beautify, slim, enlarge " +
+  "skin tone/undertone, any moles or freckles, and any existing facial hair. Do NOT beautify, slim, enlarge " +
   "eyes, add or remove facial hair beyond the stated grooming, or change age. Maintain perfect " +
   "facial consistency across ALL panels — the identical face in every thumbnail, no drift, no " +
   "stylization. Ultra-realistic, sharp focus.\n" +
@@ -430,6 +430,10 @@ serve(async (req) => {
     if (await hasRecentPendingJob(admin, "wedding_consulting_reports", userId)) {
       return json({ error: "duplicate_request" }, 409);
     }
+    // 잔액 선확인(읽기) — 잔액 0 사용자의 무료 게이트 폭주 차단(최소 1섹션 반값 기준).
+    if (!(await hasHeartBalance(admin, userId, 5))) {
+      return json({ error: "insufficient_hearts" }, 402);
+    }
     const { data: sourceBlob } = await admin.storage.from("invitation-uploads").download(sourcePath);
     if (!sourceBlob) return json({ error: "source_download_failed" }, 400);
     const precheckFail = await precheckSourceImage(sourceBlob, Deno.env.get("GEMINI_API_KEY"));
@@ -488,8 +492,14 @@ serve(async (req) => {
                 { type: "input_text", text: `이 ${gender === "groom" ? "신랑" : "신부"} 사진을 분석해 위 JSON 을 채워줘.` },
                 { type: "input_image", image_url: await (async () => {
                   // 원본은 품질 게이트 단계에서 이미 받아둠(sourceBlob) — 재다운로드 없음.
+                  // 1바이트 문자열 연결(O(n) concat)은 20MB 에서 Edge CPU 리밋과 충돌 위험
+                  // → 8KB 청크 변환(studioEdge.precheckSourceImage 와 동일 방식).
                   const buf = new Uint8Array(await sourceBlob.arrayBuffer());
-                  let bin = ""; for (let i = 0; i < buf.length; i++) bin += String.fromCharCode(buf[i]);
+                  let bin = "";
+                  const CHUNK = 8192;
+                  for (let i = 0; i < buf.length; i += CHUNK) {
+                    bin += String.fromCharCode(...buf.subarray(i, i + CHUNK));
+                  }
                   return `data:${sourceBlob.type || "image/png"};base64,${btoa(bin)}`;
                 })() },
               ] },
@@ -519,12 +529,15 @@ serve(async (req) => {
         (!!analysis.season_ko || !!analysis.axes ||
           (Array.isArray(analysis.best_colors) && analysis.best_colors.length > 0));
       if (!analysisOk) {
-        await refund(finalCost);
+        // 상태 전이 승자만 환불 — reaper(10분 후 processing 환불)와 이중 환불 차단.
         // 실제 원인(있으면) + 분석 비었음 표시. 어드민 실패 목록(admin_list_ai_failures)에서 확인.
         const errDetail = (failReason || "analysis_empty: 모델 응답이 비었거나 파싱 실패").slice(0, 500);
-        await admin.from("wedding_consulting_reports")
+        const { data: won } = await admin.from("wedding_consulting_reports")
           .update({ status: "failed", error: errDetail, charged: 0, updated_at: new Date().toISOString() })
-          .eq("id", reportId);
+          .eq("id", reportId)
+          .eq("status", "processing")
+          .select("id");
+        if (won && won.length > 0) await refund(finalCost);
         return;
       }
 

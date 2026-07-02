@@ -186,6 +186,38 @@ export const SCENE_TYPE_DESC: Record<SceneType, string> = {
   STUDIO: "스튜디오 — 편집 포즈 컷",
 };
 
+
+/**
+ * 씬 promptBlock 의 신부 전용 묘사를 신랑용으로 중립화 — 단일 소스.
+ * 기존 대명사 3종 치환만으로는 "dress train"·"bouquet"·"solo bridal entrance" 가
+ * 잔존해 DO NOT("부케·베일 금지")과 모순되고, 목적격 her→his 오치환("behind his")
+ * 비문이 생겼다. 구체 문구를 먼저 교체한 뒤 대명사를 격에 맞게 치환한다.
+ */
+export function neutralizeVenueForGroom(text: string): string {
+  // promptBlock 은 줄바꿈 포함이라 구문 매칭은 공백 유연 정규식으로.
+  const phrase = (p: string) => new RegExp(p.split(" ").join("\\s+"), "gi");
+  return text
+    .replace(
+      phrase("dress train flowing gently behind her\\. She may hold a small bouquet, or her hands rest naturally\\."),
+      "posture upright and confident, hands resting naturally.",
+    )
+    .replace(
+      phrase("train flowing softly behind her, holding a small bouquet or hands resting naturally\\."),
+      "posture upright and confident, hands resting naturally.",
+    )
+    .replace(
+      phrase("dress train trailing through lush greenery and pastel blooming flowers\\."),
+      "walking through lush greenery and pastel blooming flowers.",
+    )
+    .replace(/\bbridal\b/gi, "groom")
+    .replace(/\bbehind her\b/gi, "behind him")
+    .replace(/\baround her\b/gi, "around him")
+    .replace(/\bbride\b/gi, "groom")
+    .replace(/\bher\b/gi, "his")
+    .replace(/\bShe\b/g, "He")
+    .replace(/\bshe\b/g, "he");
+}
+
 /**
  * 메인 프롬프트 빌더 — Edge Function 에서 사용
  *
@@ -213,7 +245,7 @@ export const buildFittingPrompt = (
   const custom = !!opts.custom;
   const shotType: ShotType = opts.shotType ?? "full";
   // 짧은/미디 키워드가 없으면 웨딩드레스 기본 = 플로어렝스로 가정(발 강제 안 함).
-  const longGown = !/short|mini|midi|knee|짧|미니|미디|무릎/i.test(dressDescription);
+  const longGown = !/short|mini|midi|tea|knee|짧|미니|미디|무릎/i.test(dressDescription);
 
   const retouch = retouchBlock(opts.retouch ?? "natural", "bride");
 
@@ -329,7 +361,11 @@ ${scene.promptBlock}
 
 POSE
 ${
-  isCeremony
+  shotType === "closeup"
+    ? `- Head straight or a slight tilt, eyes engaging the camera
+- Soft natural smile, relaxed shoulders
+- Stay within the FRAMING above — do NOT zoom out to show the body`
+    : isCeremony
     ? `- Mid-stride walking motion down the aisle, slight contrapposto
 - Dress train flowing behind her (natural fabric movement)
 - May hold a small bouquet at waist height, or hands rest naturally
@@ -340,11 +376,15 @@ ${
   or hold a small bouquet; the other arm relaxed
 - Soft natural smile, eyes warm and engaged
 - Slight head tilt okay`
-}
+}${
+  shotType === "closeup"
+    ? ""
+    : `
 - Avoid symmetric mannequin-stiff stance with arms hanging straight
   and hands clasped at center
-- Full body or 3/4 body visible, centered
-- Subtle natural movement in fabric
+- ${shotType === "full" ? "Full body or 3/4 body visible, centered" : "Waist-up framing per the FRAMING section — do NOT zoom out to full body"}
+- Subtle natural movement in fabric`
+}
 
 DO NOT
 - Drift the face toward generic / idealized features
@@ -410,11 +450,8 @@ generic default.
 
 `
     : "";
-  // 씬 문구의 신부 표현 중립화(장소 묘사라 대부분 무해, "the bride stands" 류만 치환).
-  const venue = scene.promptBlock
-    .replace(/\bbride\b/gi, "groom")
-    .replace(/\bher\b/gi, "his")
-    .replace(/\bshe\b/gi, "he");
+  // 씬 문구 신랑 중립화 — 단일 소스 헬퍼(트레인·부케 제거 + 격 맞춘 대명사).
+  const venue = neutralizeVenueForGroom(scene.promptBlock);
 
   return `You're generating a photorealistic Korean groom portrait.
 
@@ -440,7 +477,7 @@ TASK
 Produce a single wedding photograph of the groom from Image 1 wearing
 ${taskSuitSource}, in the venue described below.
 
-${shotFramingBlock(shotType, false)}
+${shotFramingBlock(shotType, false, "groom")}
 
 ${tailoringBlock}GROOM — identity from Image 1, styling from his wedding day
 - Face: the SAME PERSON — reproduce EVERY feature exactly as in IDENTITY MATCH
@@ -480,7 +517,11 @@ ${venue}
 
 POSE
 ${
-  isCeremony
+  shotType === "closeup"
+    ? `- Head straight or a slight tilt, eyes engaging the camera
+- Soft confident expression, relaxed shoulders
+- Stay within the FRAMING above — do NOT zoom out to show the body`
+    : isCeremony
     ? `- Standing or a slight mid-stride at the aisle, confident upright posture
 - Hands natural — adjusting a cuff or jacket button, one hand lightly in a pocket,
   or relaxed at the sides
@@ -488,9 +529,13 @@ ${
     : `- Natural standing pose with subtle contrapposto
 - Hands natural — adjust a cuff, one hand lightly in a pocket, or relaxed
 - Soft natural expression, eyes warm and engaged`
-}
+}${
+  shotType === "closeup"
+    ? ""
+    : `
 - Avoid a stiff mannequin stance with arms hanging straight and hands clasped
-- Full body or 3/4 body visible, centered
+- ${shotType === "full" ? "Full body or 3/4 body visible, centered" : "Waist-up framing per the FRAMING section — do NOT zoom out to full body"}`
+}
 
 DO NOT
 - Drift the face toward generic / idealized features
@@ -656,10 +701,7 @@ function buildRecommendSuitPrompt(
   const occasionNoun = isCeremony
     ? "his actual wedding ceremony"
     : "his professional wedding photoshoot";
-  const venue = scene.promptBlock
-    .replace(/\bbride\b/gi, "groom")
-    .replace(/\bher\b/gi, "his")
-    .replace(/\bshe\b/gi, "he");
+  const venue = neutralizeVenueForGroom(scene.promptBlock);
 
   return `You're generating a photorealistic Korean groom portrait.
 

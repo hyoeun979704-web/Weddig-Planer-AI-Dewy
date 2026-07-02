@@ -294,18 +294,25 @@ export function buildMakeupPromptAddendum(ctx: PersonalizationContext): string {
  */
 export function toStylePreferencePayload(
   ctx: PersonalizationContext,
+  opts: { gender?: "bride" | "groom" } = {},
 ): Record<string, unknown> | null {
-  if (!ctx.hasData) return null;
-  return {
+  // 신랑 추천엔 신부 드레스 유래 신호(실루엣·넥라인·드레스 화이트)를 주입하지 않는다
+  // — 서버 애드덤이 성별 비인지라 수트 프롬프트에 드레스 취향이 붙던 문제 교정.
+  const isGroom = opts.gender === "groom";
+  const payload = {
     season: ctx.seasonLabel ?? undefined,
     tone: ctx.colorTone ?? undefined,
-    dress_white: ctx.dressWhiteName ?? undefined,
-    silhouettes: ctx.recommendedSilhouettes.length ? ctx.recommendedSilhouettes : undefined,
-    necklines: ctx.recommendedNecklines.length ? ctx.recommendedNecklines : undefined,
+    dress_white: isGroom ? undefined : ctx.dressWhiteName ?? undefined,
+    silhouettes: !isGroom && ctx.recommendedSilhouettes.length ? ctx.recommendedSilhouettes : undefined,
+    necklines: !isGroom && ctx.recommendedNecklines.length ? ctx.recommendedNecklines : undefined,
     metal: ctx.metal ?? undefined,
     style_tags: ctx.styleTags.length ? ctx.styleTags : undefined,
     lip: ctx.makeupLip ?? undefined,
     cheek: ctx.makeupCheek ?? undefined,
     eye: ctx.makeupEye ?? undefined,
   };
+  // hasData(=summaryChips 기준) 게이트는 칩에 안 잡히는 신호(dress_white·넥라인·
+  // 립톤 등)만 있는 케이스를 통째로 드랍했다 — 실제 필드 기준으로 판정.
+  const hasAny = Object.values(payload).some((v) => v !== undefined);
+  return hasAny ? payload : null;
 }

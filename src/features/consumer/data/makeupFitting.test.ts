@@ -36,7 +36,6 @@ vi.mock("@/integrations/supabase/client", () => {
 import {
   uploadMakeupSource,
   fetchActiveMakeups,
-  fetchMakeupMeta,
   generateMakeupFitting,
   generateMakeupRecommend,
   fetchMakeupGallery,
@@ -72,17 +71,6 @@ describe("fetchActiveMakeups", () => {
   it("에러 시 throw", async () => {
     h.order.mockResolvedValue({ data: null, error: new Error("e") });
     await expect(fetchActiveMakeups()).rejects.toThrow("e");
-  });
-});
-
-describe("fetchMakeupMeta", () => {
-  it("메타 반환", async () => {
-    h.maybeSingle.mockResolvedValue({ data: { name: "A" } });
-    expect(await fetchMakeupMeta("s1")).toEqual({ name: "A" });
-  });
-  it("없으면 null", async () => {
-    h.maybeSingle.mockResolvedValue({ data: null });
-    expect(await fetchMakeupMeta("s1")).toBeNull();
   });
 });
 
