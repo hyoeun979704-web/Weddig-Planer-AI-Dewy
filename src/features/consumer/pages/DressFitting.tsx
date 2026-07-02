@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
+import { studioErrorMessage } from "@/lib/studioErrors";
 import { useAuth } from "@/contexts/AuthContext";
 import { uploadDressSource, fetchActiveDresses, generateDressFitting } from "@/features/consumer/data/dressFitting";
 import { fetchHeartBalance } from "@/features/consumer/data/hearts";
@@ -281,7 +282,10 @@ const DressFitting = () => {
         });
         await fetchHearts();
       } else {
-        toast({ title: "오류", description: msg, variant: "destructive" });
+        // 결제 전 게이트(no_face 등)·중복 제출 코드를 한국어 안내로 매핑.
+        const known = studioErrorMessage(msg);
+        if (known) toast({ title: known.title, description: known.description, variant: "destructive" });
+        else toast({ title: "오류", description: msg, variant: "destructive" });
       }
     } finally {
       setIsGenerating(false);

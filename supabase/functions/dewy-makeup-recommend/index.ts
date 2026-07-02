@@ -22,6 +22,8 @@ import {
   makeJobFailureHandlers,
   spendHearts,
   runInBackground,
+  precheckSourceImage,
+  hasRecentPendingJob,
 } from "../_shared/studioEdge.ts";
 import {
   buildRecommendMakeupPrompt,
@@ -73,6 +75,14 @@ serve(async (req) => {
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
     if (!OPENAI_API_KEY) return json({ error: "openai_not_configured" }, 500);
 
+    // 이중 제출 가드(15초) + 결제 전 사진 품질 게이트(fail-open). 원본은 합성에 재사용.
+    if (await hasRecentPendingJob(supabaseAdmin, "makeup_fittings", userId)) {
+      return json({ error: "duplicate_request" }, 409);
+    }
+    const sourceBlob = await downloadFromStorage(supabaseAdmin, "makeup-uploads", body.source_image_path);
+    const precheckFail = await precheckSourceImage(sourceBlob, Deno.env.get("GEMINI_API_KEY"));
+    if (precheckFail) return json({ error: precheckFail }, 400);
+
     const spend = await spendHearts(supabaseAdmin, userId, HEART_COST, "makeup_recommend");
     if (spend instanceof Response) return spend;
 
@@ -108,17 +118,12 @@ serve(async (req) => {
 
     const job = (async () => {
       try {
-        const userImgBlob = await downloadFromStorage(
-          supabaseAdmin,
-          "makeup-uploads",
-          body.source_image_path,
-        );
-
+        // 원본은 품질 게이트 단계에서 이미 받아둠(sourceBlob) — 재다운로드 없음.
         const resultBlob = await callImageEdit({
           apiKey: OPENAI_API_KEY,
           prompt,
           size: "1024x1024",
-          images: [{ blob: userImgBlob, name: "user.png" }],
+          images: [{ blob: sourceBlob, name: "user.png" }],
         });
 
         const resultPath = `${userId}/${fittingId}.png`;

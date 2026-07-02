@@ -59,8 +59,9 @@ export function base64ToBlob(b64: string, mime: string): Blob {
 }
 
 /**
- * OpenAI images/edits 1회 호출 → 결과 Blob. 실패 시 코드 문자열 throw
- * (예: "openai_429" / "no_image_returned") — 호출부가 markFailed/refund 분기.
+ * OpenAI images/edits 호출 → 결과 Blob. 일시 장애(429/5xx·네트워크)는 2초 후
+ * 1회만 재시도(엣지 워커 월클럭 한도 내 — 재시도 폭주 금지). 그 외/재실패는
+ * 코드 문자열 throw(예: "openai_429") — 호출부가 markFailed/refund 분기.
  */
 export async function callImageEdit(args: {
   apiKey: string;
@@ -69,19 +70,35 @@ export async function callImageEdit(args: {
   quality?: string;
   images: { blob: Blob; name: string }[];
 }): Promise<Blob> {
-  const form = new FormData();
-  form.append("model", MODELS.image);
-  form.append("prompt", args.prompt);
-  form.append("size", args.size);
-  form.append("quality", args.quality ?? "medium");
-  form.append("n", "1");
-  for (const img of args.images) form.append("image[]", img.blob, img.name);
+  const attempt = async (): Promise<Response> => {
+    const form = new FormData();
+    form.append("model", MODELS.image);
+    form.append("prompt", args.prompt);
+    form.append("size", args.size);
+    form.append("quality", args.quality ?? "medium");
+    form.append("n", "1");
+    for (const img of args.images) form.append("image[]", img.blob, img.name);
+    return await fetch("https://api.openai.com/v1/images/edits", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${args.apiKey}` },
+      body: form,
+    });
+  };
 
-  const res = await fetch("https://api.openai.com/v1/images/edits", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${args.apiKey}` },
-    body: form,
-  });
+  let res: Response;
+  try {
+    res = await attempt();
+  } catch (e) {
+    // 네트워크 단계 실패 — 1회 재시도
+    console.warn("image edit network error, retrying once:", e);
+    await new Promise((r) => setTimeout(r, 2000));
+    res = await attempt();
+  }
+  if (res.status === 429 || res.status >= 500) {
+    console.warn(`OpenAI ${res.status}, retrying once:`, (await res.text()).slice(0, 200));
+    await new Promise((r) => setTimeout(r, 2000));
+    res = await attempt();
+  }
   if (!res.ok) {
     // 원시 외부 에러는 서버 로그에만(클라엔 제네릭 코드 — PII/정책문구 노출 금지)
     console.error(`OpenAI error ${res.status}:`, (await res.text()).slice(0, 300));
@@ -93,6 +110,110 @@ export async function callImageEdit(args: {
   return item.b64_json
     ? base64ToBlob(item.b64_json, "image/png")
     : await (await fetch(item.url!)).blob();
+}
+
+/**
+ * 결제 전 사진 품질 게이트 — Gemini Flash 비전으로 얼굴 수·가림을 검사한다.
+ * 하트 차감 전에 명백한 무효 사진(얼굴 없음/다인/완전 가림)을 반려해 실패 생성과
+ * CS(환불 분쟁)를 예방한다(경쟁 앱 공통 표준 — SNOW·EPIK·妙鸭 업로드 가이드).
+ *
+ * fail-open: GEMINI_API_KEY 없음·호출 실패·파싱 실패면 통과(머니패스는 게이트
+ * 장애로 절대 죽지 않는다). 차단은 확실한 경우만(보수적) — 블러 등 애매한 신호는
+ * 차단하지 않는다(멀쩡한 사진 오차단 방지).
+ *
+ * 반환: null = 통과 / 코드 문자열 = 반려 사유("no_face_detected"|"multiple_faces"|"face_fully_covered")
+ */
+export async function precheckSourceImage(
+  blob: Blob,
+  geminiKey: string | undefined,
+): Promise<string | null> {
+  if (!geminiKey) return null;
+  try {
+    const buf = new Uint8Array(await blob.arrayBuffer());
+    let bin = "";
+    const CHUNK = 8192;
+    for (let i = 0; i < buf.length; i += CHUNK) {
+      bin += String.fromCharCode(...buf.subarray(i, i + CHUNK));
+    }
+    const b64 = btoa(bin);
+    const resp = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${MODELS.geminiFlash}:generateContent?key=${geminiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{
+            role: "user",
+            parts: [
+              {
+                text:
+                  "이 사진이 '한 사람'의 AI 합성 소스로 쓸 수 있는지 검사해라. " +
+                  "face_count 는 사진 속 실제 사람 얼굴 수(포스터·화면 속 얼굴 제외). " +
+                  "face_fully_covered 는 마스크·선글라스 등으로 이목구비 대부분이 가려져 " +
+                  "얼굴 식별이 불가능할 때만 true(모자·안경·부분 가림은 false).",
+              },
+              { inline_data: { mime_type: blob.type || "image/jpeg", data: b64 } },
+            ],
+          }],
+          generationConfig: {
+            temperature: 0,
+            response_mime_type: "application/json",
+            response_schema: {
+              type: "object",
+              properties: {
+                face_count: { type: "integer" },
+                face_fully_covered: { type: "boolean" },
+              },
+              required: ["face_count", "face_fully_covered"],
+            },
+          },
+        }),
+      },
+    );
+    if (!resp.ok) {
+      console.warn("precheck gemini", resp.status);
+      return null; // fail-open
+    }
+    const data = await resp.json();
+    const text: string | undefined = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!text) return null;
+    const parsed = JSON.parse(text) as { face_count?: number; face_fully_covered?: boolean };
+    if (typeof parsed.face_count !== "number") return null;
+    if (parsed.face_count === 0) return "no_face_detected";
+    if (parsed.face_count > 1) return "multiple_faces";
+    if (parsed.face_fully_covered === true) return "face_fully_covered";
+    return null;
+  } catch (e) {
+    console.warn("precheck fail-open:", e);
+    return null;
+  }
+}
+
+/**
+ * 이중 제출(더블탭·재시도) 가드 — 같은 사용자의 최근 N초 내 pending/processing 잡이
+ * 있으면 true. 하트 차감 전에 검사해 이중 차감을 막는다(호출부는 409 duplicate_request).
+ * 조회 실패 시 false(fail-open — 가드 장애로 머니패스를 막지 않는다).
+ */
+export async function hasRecentPendingJob(
+  client: AnyClient,
+  table: string,
+  userId: string,
+  withinSeconds = 15,
+): Promise<boolean> {
+  try {
+    const since = new Date(Date.now() - withinSeconds * 1000).toISOString();
+    const { data, error } = await client
+      .from(table)
+      .select("id")
+      .eq("user_id", userId)
+      .in("status", ["pending", "processing"])
+      .gte("created_at", since)
+      .limit(1);
+    if (error) return false;
+    return (data?.length ?? 0) > 0;
+  } catch {
+    return false;
+  }
 }
 
 /**

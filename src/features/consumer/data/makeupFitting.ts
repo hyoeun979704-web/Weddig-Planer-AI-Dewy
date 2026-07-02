@@ -5,6 +5,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { createSignedUrl, uploadToBucket, SIGNED_URL_TTL } from "@/lib/storage";
+import { toStudioError } from "@/lib/studioErrors";
 
 const UPLOAD_BUCKET = "makeup-uploads";
 const RESULT_BUCKET = "makeup-results";
@@ -72,7 +73,7 @@ export async function fetchMakeupMeta(sampleId: string): Promise<Record<string, 
 /** dewy-makeup 호출 → fitting_id 반환. error/응답 error/누락 시 throw(호출부가 메시지 분기). */
 export async function generateMakeupFitting(body: Record<string, unknown>): Promise<string> {
   const { data, error } = await supabase.functions.invoke("dewy-makeup", { body });
-  if (error) throw error;
+  if (error) throw await toStudioError(error); // 코드 추출(@/lib/studioErrors)
   if ((data as { error?: string })?.error) throw new Error((data as { error: string }).error);
   const fittingId = (data as { fitting_id?: string })?.fitting_id;
   if (!fittingId) throw new Error("생성 요청 실패");
@@ -82,7 +83,7 @@ export async function generateMakeupFitting(body: Record<string, unknown>): Prom
 /** dewy-makeup-recommend 호출 → fitting_id 반환. 누락 시 generation_failed throw. */
 export async function generateMakeupRecommend(body: Record<string, unknown>): Promise<string> {
   const { data, error } = await supabase.functions.invoke("dewy-makeup-recommend", { body });
-  if (error) throw error;
+  if (error) throw await toStudioError(error); // 코드 추출(@/lib/studioErrors)
   if ((data as { error?: string })?.error) throw new Error((data as { error: string }).error);
   const fittingId = (data as { fitting_id?: string })?.fitting_id;
   if (!fittingId) throw new Error("generation_failed");

@@ -21,6 +21,8 @@ import {
   makeJobFailureHandlers,
   spendHearts,
   runInBackground,
+  precheckSourceImage,
+  hasRecentPendingJob,
 } from "../_shared/studioEdge.ts";
 import { sceneByCode, type SceneCode } from "../_shared/studio/fittingScenes.ts";
 import { buildSdmPrompt, sdmHairStyles, type SdmReferenceMode } from "../_shared/studio/sdmPrompt.ts";
@@ -127,6 +129,14 @@ serve(async (req) => {
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
     if (!OPENAI_API_KEY) return json({ error: "openai_not_configured" }, 500);
 
+    // 이중 제출 가드(15초) + 결제 전 사진 품질 게이트(fail-open). 원본은 합성에 재사용.
+    if (await hasRecentPendingJob(supabaseAdmin, "sdm_previews", userId)) {
+      return json({ error: "duplicate_request" }, 409);
+    }
+    const sourceBlob = await downloadFromStorage(supabaseAdmin, "sdm-uploads", body.source_image_path);
+    const precheckFail = await precheckSourceImage(sourceBlob, Deno.env.get("GEMINI_API_KEY"));
+    if (precheckFail) return json({ error: precheckFail }, 400);
+
     // 하트 차감
     const spend = await spendHearts(supabaseAdmin, userId, HEART_COST, "sdm_preview");
     if (spend instanceof Response) return spend;
@@ -171,12 +181,10 @@ serve(async (req) => {
 
     const jobRun = (async () => {
       try {
-        const [userImgBlob, dressImgBlob] = await Promise.all([
-          downloadFromStorage(supabaseAdmin, "sdm-uploads", body.source_image_path),
-          attachDressImage && dress ? downloadFromUrl(dress.image_url) : Promise.resolve(null),
-        ]);
+        // 원본은 품질 게이트 단계에서 이미 받아둠(sourceBlob) — 재다운로드 없음.
+        const dressImgBlob = attachDressImage && dress ? await downloadFromUrl(dress.image_url) : null;
 
-        const images = [{ blob: userImgBlob, name: "user.png" }];
+        const images = [{ blob: sourceBlob, name: "user.png" }];
         if (dressImgBlob) images.push({ blob: dressImgBlob, name: "dress.png" });
 
         // quality: high 는 지연 과다(실사용 피드백) → medium 유지.

@@ -26,6 +26,8 @@ import {
   makeJobFailureHandlers,
   spendHearts,
   runInBackground,
+  precheckSourceImage,
+  hasRecentPendingJob,
 } from "../_shared/studioEdge.ts";
 import { buildFittingPrompt, sceneByCode, type SceneCode } from "../_shared/studio/fittingScenes.ts";
 import { SHOT_TYPES, type ShotType } from "../_shared/studio/shotTypes.ts";
@@ -115,6 +117,17 @@ serve(async (req) => {
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
     if (!OPENAI_API_KEY) return json({ error: "openai_not_configured" }, 500);
 
+    // 이중 제출 가드(15초) — 하트 차감 전 검사(이중 차감 방지). fail-open.
+    if (await hasRecentPendingJob(supabaseAdmin, "dress_fittings", userId)) {
+      return json({ error: "duplicate_request" }, 409);
+    }
+
+    // 결제 전 사진 품질 게이트 — 명백한 무효 사진(얼굴 없음/다인/완전 가림)만 반려.
+    // fail-open(키 없음·게이트 장애 시 통과) + 다운로드한 원본은 합성 단계에서 재사용.
+    const sourceBlob = await downloadFromStorage(supabaseAdmin, "dress-uploads", body.source_image_path);
+    const precheckFail = await precheckSourceImage(sourceBlob, Deno.env.get("GEMINI_API_KEY"));
+    if (precheckFail) return json({ error: precheckFail }, 400);
+
     // 하트 차감
     const spend = await spendHearts(supabaseAdmin, userId, HEART_COST, "dress_fitting");
     if (spend instanceof Response) return spend;
@@ -155,12 +168,10 @@ serve(async (req) => {
     // 백그라운드 합성 — 페이지 이탈/창닫음에도 서버에서 계속 진행(202 즉시 반환).
     const job = (async () => {
       try {
-        const [userImgBlob, dressImgBlob] = await Promise.all([
-          downloadFromStorage(supabaseAdmin, "dress-uploads", body.source_image_path),
-          dress ? downloadFromUrl(dress.image_url) : Promise.resolve(null),
-        ]);
+        // 원본은 품질 게이트 단계에서 이미 받아둠(sourceBlob) — 재다운로드 없음.
+        const dressImgBlob = dress ? await downloadFromUrl(dress.image_url) : null;
 
-        const images = [{ blob: userImgBlob, name: "user.png" }];
+        const images = [{ blob: sourceBlob, name: "user.png" }];
         if (dressImgBlob) images.push({ blob: dressImgBlob, name: "dress.png" });
 
         const resultBlob = await callImageEdit({
