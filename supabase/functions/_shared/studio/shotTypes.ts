@@ -23,17 +23,23 @@ export const shotTypeKo = (v: ShotType): string =>
  * 컷별 프레이밍 지시 블록. longGown=true 면 전신 컷에서 발을 강제하지 않는다(플로어 자락).
  */
 export function shotFramingBlock(shot: ShotType, longGown = true): string {
+  // 렌즈 앵커 — 커뮤니티 검증 어휘(85mm 인물 압축·105mm 매크로 뷰티샷·50mm 자연 원근).
+  // 조명은 씬 블록이 결정하므로 여기선 렌즈 룩(원근·압축·배경 흐림)만 지시한다.
   if (shot === "closeup") {
     return `FRAMING — close-up bridal portrait (head & shoulders only).
 Frame the face, hair and shoulders. Emphasize the bride's face (identity), makeup,
 hairstyle and the gown's neckline / upper detail. Do NOT render or invent the body
-below the upper chest. Vertical 3:4, photorealistic.`;
+below the upper chest. Rendered with the look of a 105mm macro portrait lens —
+flattering compression, crisp ultra-detailed skin texture, creamy background
+falloff. Vertical 3:4, photorealistic.`;
   }
   if (shot === "bust") {
     return `FRAMING — waist-up (bust) bridal portrait.
 Frame from roughly the waist / upper hip upward. Do NOT render or invent the legs or
 lower body. Emphasize face (identity), hair, makeup and the bodice / neckline of the
-gown, with natural elegant upper-body proportions. Vertical 3:4, photorealistic.`;
+gown, with natural elegant upper-body proportions. Rendered with the look of an
+85mm portrait lens — natural facial compression, softly blurred background.
+Vertical 3:4, photorealistic.`;
   }
   const feet = longGown
     ? `The floor-length gown falls naturally to the ground; it is completely fine if the
@@ -47,5 +53,7 @@ that would compress or shorten the legs/torso.`
 - Photograph from a slightly LOW camera angle (around waist height) for an elegant,
   leggy line.
 - ${feet}
+- Rendered with the look of a 50mm lens on a full-frame camera — natural
+  perspective, no wide-angle distortion.
 - Vertical 3:4, photorealistic.`;
 }
