@@ -38,6 +38,7 @@ import { FittingProgress } from "@/components/fitting/FittingProgress";
 import { PersonalizationChips } from "@/components/PersonalizationChips";
 import { useWeddingContext } from "@/hooks/useWeddingContext";
 import { toStylePreferencePayload } from "@/lib/weddingContext";
+import { addPendingJob } from "@/lib/pendingJobs";
 
 /**
  * 메이크업 AI 추천 — 셀카만 입력. gpt-image-2 가 얼굴을 보고 어울리는
@@ -141,6 +142,8 @@ const MakeupRecommend = () => {
         style_preference: toStylePreferencePayload(personalization) ?? undefined,
       });
       // 생성은 비동기(결과 페이지에서 폴링) — "완료"가 아니라 "요청됨"으로 안내.
+      // 결과 페이지를 벗어나도 완료 알림이 오도록 진행중 잡 등록(피팅과 동일 타입).
+      addPendingJob({ id: fittingId, type: "makeup" });
       toast({ title: "생성 요청을 보냈어요", description: "결과가 준비되면 화면에 표시돼요." });
       await fetchHearts();
       navigate(`/ai-studio/makeup-room/result/${fittingId}`);

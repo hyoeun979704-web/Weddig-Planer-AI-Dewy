@@ -4,6 +4,7 @@ import BottomNav from "@/components/BottomNav";
 import HairPreviewGallery from "./HairPreviewGallery";
 import DressFittingGallery from "./DressFittingGallery";
 import MakeupFittingGallery from "./MakeupFittingGallery";
+import SdmPreviewGallery from "./SdmPreviewGallery";
 import PhotoFixGallery from "./PhotoFixGallery";
 import ConsultingGallery from "./ConsultingGallery";
 
@@ -14,6 +15,7 @@ const TABS = [
   { id: "hair", label: "헤어", Comp: HairPreviewGallery },
   { id: "dress", label: "드레스", Comp: DressFittingGallery },
   { id: "makeup", label: "메이크업", Comp: MakeupFittingGallery },
+  { id: "sdm", label: "스드메", Comp: SdmPreviewGallery },
   { id: "photo", label: "사진보정", Comp: PhotoFixGallery },
   { id: "consulting", label: "컨설팅", Comp: ConsultingGallery },
 ] as const;

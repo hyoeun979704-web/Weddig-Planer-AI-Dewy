@@ -35,7 +35,6 @@ vi.mock("@/integrations/supabase/client", () => {
 import {
   uploadSdmSource,
   fetchActiveDresses,
-  fetchDressMeta,
   generateSdmPreview,
   fetchSdmPreview,
   sdmResultUrl,
@@ -68,17 +67,6 @@ describe("fetchActiveDresses", () => {
   it("에러 시 throw", async () => {
     h.order.mockResolvedValue({ data: null, error: new Error("e") });
     await expect(fetchActiveDresses()).rejects.toThrow("e");
-  });
-});
-
-describe("fetchDressMeta", () => {
-  it("메타 반환", async () => {
-    h.maybeSingle.mockResolvedValue({ data: { name: "A" } });
-    expect(await fetchDressMeta("s1")).toEqual({ name: "A" });
-  });
-  it("없으면 null", async () => {
-    h.maybeSingle.mockResolvedValue({ data: null });
-    expect(await fetchDressMeta("s1")).toBeNull();
   });
 });
 

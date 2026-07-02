@@ -7,7 +7,7 @@
 // 압축돼 다리가 짧아졌다. → 발 강제 금지 + 드레스 길이별 적응 프레이밍 + 로우앵글 +
 // 늘씬한 비율 명시. 얼굴은 그대로 잠그되(identity) 몸 비율은 플래터링하게 허용.
 
-import { sceneByCode, type SceneCode } from "./fittingScenes.ts";
+import { sceneByCode, neutralizeVenueForGroom, type SceneCode } from "./fittingScenes.ts";
 import { shotFramingBlock, type ShotType } from "./shotTypes.ts";
 import { retouchBlock, type RetouchLevel } from "./retouch.ts";
 
@@ -90,7 +90,7 @@ export function buildSdmPrompt(args: BuildSdmPromptArgs): string {
     const gRefs = ["- Image 1: the groom (user's photo). His identity is the single source of truth."];
     if (dressByImage) gRefs.push("- Image 2: the wedding suit on a headless mannequin. Use ONLY the suit, NOT any body or face.");
     const suit = dressDescription.trim() || "a classic well-fitted Korean wedding suit, notch lapel, navy or black";
-    const gVenue = scene.promptBlock.replace(/\bbride\b/gi, "groom").replace(/\bher\b/gi, "his").replace(/\bshe\b/gi, "he");
+    const gVenue = neutralizeVenueForGroom(scene.promptBlock);
     return `You are generating a single photorealistic Korean groom portrait that combines
 the chosen background, grooming, hairstyle and suit into ONE final look.
 
@@ -99,12 +99,15 @@ ${gRefs.join("\n")}
 
 TOP PRIORITY — IDENTITY MATCH (most important rule)
 The face must be UNMISTAKABLY the same person as Image 1 — instantly recognizable.
-Reproduce his exact eyes (shape, slant, eyelid type, spacing), eyebrows, nose,
-lips, jawline, chin, cheekbones, hairline, skin tone/undertone, and any moles or
-freckles. Do NOT beautify the face, enlarge eyes, or average toward a generic AI
+Reproduce his exact eyes (shape, size, slant, eyelid type, spacing), eyebrows, nose
+(bridge, tip, nostrils), lips (shape, fullness, philtrum), jawline, chin, cheekbones,
+hairline, face length-to-width ratio, skin tone/undertone, and any moles or freckles.
+Do NOT beautify, slim, enlarge eyes, change age, or average toward a generic AI
 groom model. This overrides every instruction below.
+Image 1 shows WHO he is — do NOT carry the photo's ambient lighting or casual
+clothing into the output (grooming, hair and suit are specified below).
 
-${shotFramingBlock(shotType, false)}
+${shotFramingBlock(shotType, false, "groom")}
 Keep his recognizable build and identity; render a clean, well-tailored line
 within the framing above. Never doll-like / chibi proportions.
 
@@ -148,10 +151,13 @@ ${refs.join("\n")}
 
 TOP PRIORITY — IDENTITY MATCH (most important rule)
 The face must be UNMISTAKABLY the same person as Image 1 — instantly recognizable.
-Reproduce her exact eyes (shape, slant, eyelid type, spacing), eyebrows, nose,
-lips, jawline, chin, cheekbones, hairline, skin tone/undertone, and any moles or
-freckles. Do NOT beautify the face, enlarge eyes, or average toward a generic AI
+Reproduce her exact eyes (shape, size, slant, eyelid type, spacing), eyebrows, nose
+(bridge, tip, nostrils), lips (shape, fullness, philtrum), jawline, chin, cheekbones,
+hairline, face length-to-width ratio, skin tone/undertone, and any moles or freckles.
+Do NOT beautify, slim, enlarge eyes, change age, or average toward a generic AI
 bridal model. This overrides every instruction below.
+Image 1 shows WHO she is — do NOT carry the photo's ambient lighting or casual
+clothing into the output (makeup, hair and dress are specified below).
 
 ${framing}
 Keep her recognizable build and identity; render a flattering, elegant bridal line

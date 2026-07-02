@@ -59,9 +59,9 @@ export function base64ToBlob(b64: string, mime: string): Blob {
 }
 
 /**
- * OpenAI images/edits 호출 → 결과 Blob. 일시 장애(429/5xx·네트워크)는 2초 후
- * 1회만 재시도(엣지 워커 월클럭 한도 내 — 재시도 폭주 금지). 그 외/재실패는
- * 코드 문자열 throw(예: "openai_429") — 호출부가 markFailed/refund 분기.
+ * OpenAI images/edits 호출 → 결과 Blob. 일시 장애는 2초 후 재시도 — 네트워크 실패
+ * 1회 + HTTP 429/5xx 1회, 최악 총 3회 시도 상한(월클럭 한도 내, 재시도 폭주 금지).
+ * 그 외/재실패는 코드 문자열 throw(예: "openai_429") — 호출부가 markFailed/refund 분기.
  */
 export async function callImageEdit(args: {
   apiKey: string;
@@ -190,6 +190,30 @@ export async function precheckSourceImage(
 }
 
 /**
+ * 잔액 선확인(읽기) — Gemini 품질 게이트가 하트 차감 **앞**이라, 잔액 0 사용자가
+ * 게이트(스토리지 다운로드+Gemini 호출)를 무한 반복해 비용을 태울 수 있는 표면을
+ * 차단한다. 부족 확정 시에만 false(fail-open: 행 없음/조회 실패는 통과 — 실제
+ * 차감 검증은 spend_hearts 가 원자적으로 수행).
+ */
+export async function hasHeartBalance(
+  client: AnyClient,
+  userId: string,
+  amount: number,
+): Promise<boolean> {
+  try {
+    const { data, error } = await client
+      .from("user_hearts")
+      .select("balance")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (error || !data) return true; // fail-open
+    return (data.balance as number) >= amount;
+  } catch {
+    return true;
+  }
+}
+
+/**
  * 이중 제출(더블탭·재시도) 가드 — 같은 사용자의 최근 N초 내 pending/processing 잡이
  * 있으면 true. 하트 차감 전에 검사해 이중 차감을 막는다(호출부는 409 duplicate_request).
  * 조회 실패 시 false(fail-open — 가드 장애로 머니패스를 막지 않는다).
@@ -229,31 +253,44 @@ export function makeJobFailureHandlers(opts: {
 }) {
   const { client, table, userId, amount, earnReason } = opts;
 
+  // 원시 예외 메시지는 서버 로그에만 — error_message 는 RLS self-read 로 사용자에게
+  // 노출되므로 코드형 문자열만 저장(내부 URL/스택 누출 방지).
+  const safeReason = (reason: string) =>
+    /^[a-z0-9_]{1,64}$/.test(reason) ? reason : "inner_error";
+
   const markFailed = async (rowId: string, reason: string) => {
     await client
       .from(table)
       .update({
         status: "failed",
-        error_message: reason.substring(0, 500),
+        error_message: safeReason(reason),
         updated_at: new Date().toISOString(),
       })
       .eq("id", rowId);
   };
 
+  // 이중 환불 차단: 상태 전이(pending/failed→refunded)에서 이긴 호출만 earn_hearts.
+  // reaper(10분 후 pending→failed+환불)와 함수 환불이 겹쳐도 한쪽만 지급된다.
+  // (markFailed 를 먼저 부른 경로도 있으므로 'failed' 도 전이 허용 — 단 reaper 가
+  //  이미 'failed'+환불 처리한 행은 reaper 의 error_message='timeout_reaped' 로 식별해 제외.)
   const refund = async (reason: string, rowId?: string) => {
     try {
+      if (rowId) {
+        const { data: won, error } = await client
+          .from(table)
+          .update({ status: "refunded", error_message: safeReason(reason) })
+          .eq("id", rowId)
+          .in("status", ["pending", "failed"])
+          .neq("error_message", "timeout_reaped")
+          .select("id");
+        if (error || !won || won.length === 0) return; // 전이 패배 = 이미 환불(reaper 등)
+      }
       await client.rpc("earn_hearts", {
         p_user_id: userId,
         p_amount: amount,
         p_reason: earnReason,
         p_ref_id: rowId ?? null,
       });
-      if (rowId) {
-        await client
-          .from(table)
-          .update({ status: "refunded", error_message: reason.substring(0, 500) })
-          .eq("id", rowId);
-      }
     } catch (e) {
       console.error("refund failed:", e);
     }

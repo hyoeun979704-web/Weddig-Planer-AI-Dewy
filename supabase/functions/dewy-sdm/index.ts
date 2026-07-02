@@ -23,6 +23,7 @@ import {
   runInBackground,
   precheckSourceImage,
   hasRecentPendingJob,
+  hasHeartBalance,
 } from "../_shared/studioEdge.ts";
 import { sceneByCode, type SceneCode } from "../_shared/studio/fittingScenes.ts";
 import { buildSdmPrompt, sdmHairStyles, type SdmReferenceMode } from "../_shared/studio/sdmPrompt.ts";
@@ -133,7 +134,17 @@ serve(async (req) => {
     if (await hasRecentPendingJob(supabaseAdmin, "sdm_previews", userId)) {
       return json({ error: "duplicate_request" }, 409);
     }
-    const sourceBlob = await downloadFromStorage(supabaseAdmin, "sdm-uploads", body.source_image_path);
+    // 잔액 선확인(읽기) — 잔액 0 사용자의 무료 게이트(다운로드+Gemini) 폭주 차단.
+    if (!(await hasHeartBalance(supabaseAdmin, userId, HEART_COST))) {
+      return json({ error: "insufficient_hearts" }, 402);
+    }
+    let sourceBlob: Blob;
+    try {
+      sourceBlob = await downloadFromStorage(supabaseAdmin, "sdm-uploads", body.source_image_path);
+    } catch {
+      // 코드형 400 — 클라 studioErrors 매핑("사진을 불러오지 못했어요"). 하트 미차감.
+      return json({ error: "source_download_failed" }, 400);
+    }
     const precheckFail = await precheckSourceImage(sourceBlob, Deno.env.get("GEMINI_API_KEY"));
     if (precheckFail) return json({ error: precheckFail }, 400);
 
@@ -164,7 +175,7 @@ serve(async (req) => {
           hair_style: body.hair_style,
           makeup_summary: body.makeup_summary?.slice(0, 200) ?? null,
           shot_type: shotType,
-          reference_mode: referenceMode,
+          reference_mode: gender === "groom" ? "text" : referenceMode, // 실제 사용값 기록(추적 드리프트 방지)
           gender,
           retouch_level: retouch,
         },

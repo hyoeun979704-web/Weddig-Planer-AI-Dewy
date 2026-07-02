@@ -8,6 +8,8 @@
 //   - makeup-uploads / makeup-results : 메이크업 AI 합성 입력·결과
 //   - sdm-uploads / sdm-results : 스드메 미리보기 입력·결과 (RPC 는 20260626100000 에서
 //     추가됐지만 이 함수의 TARGET_BUCKETS 에 빠져 있어 삭제가 no-op 이던 P0 교정)
+//   - photoshoot-uploads / photoshoot-results : 웨딩촬영 시안 입력·결과 (버킷·RLS 는
+//     20260620010000 에서 생성됐는데 정리 대상 누락 — 기능 가동 전 선제 편입)
 //   - invitation-uploads : 단, RPC 가 AI 결과물 prefix(consulting/hair/photofix/enhanced)만 반환.
 //     (청첩장 사진·지도 등 '직접 {uid}/<file>' 은 청첩장 생명주기로 관리 → 본 일괄삭제 제외)
 //
@@ -42,6 +44,7 @@ const TARGET_BUCKETS = [
   "dress-uploads", "dress-results",
   "makeup-uploads", "makeup-results",
   "sdm-uploads", "sdm-results",
+  "photoshoot-uploads", "photoshoot-results",
   "invitation-uploads",
 ] as const;
 const BATCH_SIZE = 100; // Storage API .remove() 1회 호출당 최대 경로 수

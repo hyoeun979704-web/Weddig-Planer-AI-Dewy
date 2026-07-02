@@ -21,11 +21,26 @@ export const shotTypeKo = (v: ShotType): string =>
 
 /**
  * 컷별 프레이밍 지시 블록. longGown=true 면 전신 컷에서 발을 강제하지 않는다(플로어 자락).
+ * subject: 신부(기본) 텍스트는 기존 그대로(회귀 0), 신랑은 makeup/gown 등 신부 어휘를
+ * 그루밍/수트 어휘로 치환한 별도 분기(신랑 렌더에 "bridal/makeup/gown" 잔존하던 결함 교정).
  */
-export function shotFramingBlock(shot: ShotType, longGown = true): string {
+export function shotFramingBlock(
+  shot: ShotType,
+  longGown = true,
+  subject: "bride" | "groom" = "bride",
+): string {
   // 렌즈 앵커 — 커뮤니티 검증 어휘(85mm 인물 압축·105mm 매크로 뷰티샷·50mm 자연 원근).
   // 조명은 씬 블록이 결정하므로 여기선 렌즈 룩(원근·압축·배경 흐림)만 지시한다.
+  const isGroom = subject === "groom";
   if (shot === "closeup") {
+    if (isGroom) {
+      return `FRAMING — close-up groom portrait (head & shoulders only).
+Frame the face, hair and shoulders. Emphasize the groom's face (identity), grooming,
+hairstyle and the suit's collar / lapel / tie detail. Do NOT render or invent the body
+below the upper chest. Rendered with the look of a 105mm macro portrait lens —
+flattering compression, crisp ultra-detailed skin texture, creamy background
+falloff. Vertical 3:4, photorealistic.`;
+    }
     return `FRAMING — close-up bridal portrait (head & shoulders only).
 Frame the face, hair and shoulders. Emphasize the bride's face (identity), makeup,
 hairstyle and the gown's neckline / upper detail. Do NOT render or invent the body
@@ -34,12 +49,31 @@ flattering compression, crisp ultra-detailed skin texture, creamy background
 falloff. Vertical 3:4, photorealistic.`;
   }
   if (shot === "bust") {
+    if (isGroom) {
+      return `FRAMING — waist-up (bust) groom portrait.
+Frame from roughly the waist / upper hip upward. Do NOT render or invent the legs or
+lower body. Emphasize face (identity), hair, grooming and the jacket / shirt / tie of
+the suit, with natural upper-body proportions. Rendered with the look of an
+85mm portrait lens — natural facial compression, softly blurred background.
+Vertical 3:4, photorealistic.`;
+    }
     return `FRAMING — waist-up (bust) bridal portrait.
 Frame from roughly the waist / upper hip upward. Do NOT render or invent the legs or
 lower body. Emphasize face (identity), hair, makeup and the bodice / neckline of the
 gown, with natural elegant upper-body proportions. Rendered with the look of an
 85mm portrait lens — natural facial compression, softly blurred background.
 Vertical 3:4, photorealistic.`;
+  }
+  if (isGroom) {
+    return `FRAMING — elegant full-length groom portrait.
+- Render natural, well-tailored proportions with a natural head size (about 1/7.5 of
+  body height). Do NOT render an oversized head or short/compressed legs.
+- Photograph from a slightly LOW camera angle (around waist height) for a confident,
+  elongated line.
+- Legs and feet may be visible; keep proportions natural.
+- Rendered with the look of a 50mm lens on a full-frame camera — natural
+  perspective, no wide-angle distortion.
+- Vertical 3:4, photorealistic.`;
   }
   const feet = longGown
     ? `The floor-length gown falls naturally to the ground; it is completely fine if the

@@ -58,5 +58,8 @@ radiant eyes, glossy magazine-cover finish, and a premium cinematic color grade
 (protect skin undertones and keep white garments neutral). Even at this level,
 NEVER alter facial geometry, feature shapes, face proportions, facial asymmetry,
 ethnic features, age, or body shape — the output must be the same person,
-unmistakably, on ${poss} best day.`;
+unmistakably, on ${poss} best day. If a MAKEUP SCHEMA or dress description above
+specifies a finish (e.g. a matte base or matte fabric), that specified finish WINS
+over this glow — apply the polish to lighting, hair and overall grade instead.
+Keep any intentionally styled face-framing strands.`;
 }

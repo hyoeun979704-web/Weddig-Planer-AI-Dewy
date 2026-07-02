@@ -32,7 +32,6 @@ vi.mock("@/integrations/supabase/client", () => {
 
 import {
   uploadDressSource,
-  fetchDressMeta,
   generateDressFitting,
   generateDressRecommend,
   fetchDressGallery,
@@ -56,17 +55,6 @@ describe("uploadDressSource", () => {
   it("업로드 실패 시 throw", async () => {
     h.upload.mockResolvedValue({ error: new Error("up") });
     await expect(uploadDressSource("u1", new File(["x"], "a.png"))).rejects.toThrow("up");
-  });
-});
-
-describe("fetchDressMeta", () => {
-  it("메타 반환", async () => {
-    h.maybeSingle.mockResolvedValue({ data: { name: "A" } });
-    expect(await fetchDressMeta("s1")).toEqual({ name: "A" });
-  });
-  it("없으면 null", async () => {
-    h.maybeSingle.mockResolvedValue({ data: null });
-    expect(await fetchDressMeta("s1")).toBeNull();
   });
 });
 

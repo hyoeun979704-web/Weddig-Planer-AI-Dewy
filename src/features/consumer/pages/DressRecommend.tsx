@@ -42,6 +42,7 @@ import { FittingProgress } from "@/components/fitting/FittingProgress";
 import { PersonalizationChips } from "@/components/PersonalizationChips";
 import { useWeddingContext } from "@/hooks/useWeddingContext";
 import { toStylePreferencePayload } from "@/lib/weddingContext";
+import { addPendingJob } from "@/lib/pendingJobs";
 
 /**
  * 드레스 AI 추천 — 사진 + 체형 → gpt-image-2 가 직접 어울리는 드레스
@@ -150,9 +151,11 @@ const DressRecommend = () => {
         scene_code: sceneCode,
         gender,
         retouch_level: retouchLevel,
-        style_preference: toStylePreferencePayload(personalization) ?? undefined,
+        style_preference: toStylePreferencePayload(personalization, { gender }) ?? undefined,
       });
       // 생성은 비동기(결과 페이지에서 폴링) — "완료"가 아니라 "요청됨"으로 안내.
+      // 결과 페이지를 벗어나도 완료 알림이 오도록 진행중 잡 등록(피팅과 동일 타입).
+      addPendingJob({ id: fittingId, type: "dress" });
       toast({ title: "생성 요청을 보냈어요", description: "결과가 준비되면 화면에 표시돼요." });
       await fetchHearts();
       navigate(`/ai-studio/dress-tour/result/${fittingId}`);

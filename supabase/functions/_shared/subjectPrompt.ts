@@ -48,8 +48,8 @@ export function faceLock(g: SubjectGender): string {
   return (
     ` Keep the face UNMISTAKABLY the same ${noun} as the provided photo in every view where the face ` +
     `is visible — reproduce ${poss} exact eyes (shape, size, slant, spacing, eyelid type), eyebrows, nose ` +
-    "(bridge, tip, nostrils), lips (shape, fullness), jawline, chin, cheekbones, hairline, face proportions " +
-    "and skin tone; do NOT beautify, enlarge eyes, or change age. " +
+    "(bridge, tip, nostrils), lips (shape, fullness), jawline, chin, cheekbones, hairline, face proportions, " +
+    "skin tone, and any moles or freckles; do NOT beautify, slim, enlarge eyes, or change age. " +
     "Natural skin texture, no plastic skin, ultra-high realism, sharp focus, soft studio " +
     "lighting, clean minimal light-gray background. Do not stylize or cartoonize. No text, no logos, no watermarks."
   );

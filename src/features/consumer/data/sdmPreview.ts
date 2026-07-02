@@ -26,10 +26,18 @@ export interface SdmPreviewRow {
   error_message: string | null;
 }
 
+export interface SdmGalleryRow {
+  id: string;
+  result_image_path: string | null;
+  prompt_params: { scene_code?: string } | null;
+  created_at: string;
+}
+
 export const sdmPreviewKeys = {
   all: ["consumer", "sdmPreview"] as const,
   dresses: () => [...sdmPreviewKeys.all, "dresses"] as const,
   detail: (id: string) => [...sdmPreviewKeys.all, "detail", id] as const,
+  gallery: (userId: string) => [...sdmPreviewKeys.all, "gallery", userId] as const,
 };
 
 /** 원본 사진을 업로드 버킷에 올리고 미리보기용 서명 URL(2h)을 반환. 업로드 실패 시 throw. */
@@ -56,16 +64,6 @@ export async function fetchActiveDresses(): Promise<SdmDressSample[]> {
   return (data ?? []) as unknown as SdmDressSample[];
 }
 
-/** 카탈로그 드레스 메타데이터 전체 조회(프롬프트 주입용). 없으면 null. */
-export async function fetchDressMeta(sampleId: string): Promise<Record<string, unknown> | null> {
-  const { data } = await supabase
-    .from("dress_samples")
-    .select("name, silhouette, neckline, sleeve, length, fabric, details, back_design, color, waist, mood")
-    .eq("id", sampleId)
-    .maybeSingle();
-  return (data as Record<string, unknown> | null) ?? null;
-}
-
 /** dewy-sdm 호출 → preview_id 반환. error/응답 error/누락 시 throw(호출부가 메시지 분기). */
 export async function generateSdmPreview(body: Record<string, unknown>): Promise<string> {
   const { data, error } = await supabase.functions.invoke("dewy-sdm", { body });
@@ -74,6 +72,19 @@ export async function generateSdmPreview(body: Record<string, unknown>): Promise
   const previewId = (data as { preview_id?: string })?.preview_id;
   if (!previewId) throw new Error("생성 요청 실패");
   return previewId;
+}
+
+/** 내가 만든 완료(status=done) 스드메 미리보기 목록(최신순). 에러 시 throw.
+ * (품질검토: 10하트 최고가 플로우인데 결과물 재접근 경로가 없던 dead-end 교정 — MyResults 탭) */
+export async function fetchSdmGallery(userId: string): Promise<SdmGalleryRow[]> {
+  const { data, error } = await supabase
+    .from("sdm_previews")
+    .select("id, result_image_path, prompt_params, created_at")
+    .eq("user_id", userId)
+    .eq("status", "done")
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as unknown as SdmGalleryRow[];
 }
 
 /** 단일 스드메 미리보기 상세 조회(폴링용). 없으면 null. */

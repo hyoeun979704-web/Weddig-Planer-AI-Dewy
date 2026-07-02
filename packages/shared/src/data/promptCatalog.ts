@@ -9,6 +9,7 @@ import { buildFittingPrompt, buildRecommendDressPrompt } from "@/data/fittingSce
 import { buildMakeupPrompt, buildRecommendMakeupPrompt } from "@/data/makeupScenes";
 import { buildSdmPrompt } from "@/data/sdmPrompt";
 import { buildPhotoshootCutPrompt, CUT_PLAN } from "@/data/photoshootPrompt";
+import { hairStyleGrid, hairColorGrid } from "../../../../supabase/functions/_shared/subjectPrompt.ts";
 
 export type PromptKind = "image" | "image-snapshot" | "text-ref";
 
@@ -29,13 +30,11 @@ const MAKEUP = "dewy glass-skin base, rose MLBB tinted lip, soft brown gradient 
 const GROOM = "navy slim tuxedo, white shirt, black bow tie, neatly set side-part hair.";
 const PREV = "/ai-studio-previews";
 
-// ── 헤어(엣지 전용) 스냅샷 — 출처: supabase/functions/dewy-hair-preview/index.ts ──
-const HAIR_IDENTITY =
-  " The face must remain UNMISTAKABLY the same person as the provided photo — reproduce her exact features (eyes, eyelid type, brows, nose, lips, jawline, chin, cheekbones, hairline, face ratio, skin tone, moles/freckles). Do NOT beautify, slim, enlarge eyes, change age, or average toward a generic face. Soft studio lighting, clean minimal background, ultra-high realism. No text, no logos, no watermarks.";
-const HAIR_STYLE_GRID =
-  "Generate a 3x3 grid (9 cells) of ultra-realistic portrait photos of the SAME person with different hairstyles. Only change the hairstyle in each cell, keep perfect facial consistency across all nine. Hairstyles: loose natural waves, soft beach curls, sleek straight hair, high ponytail, low ponytail, messy bun, high bun, braided hairstyle, half-up half-down." + HAIR_IDENTITY;
-const HAIR_COLOR_GRID =
-  "Generate a 3x3 grid (9 cells) of ultra-realistic portrait photos of the SAME person with different hair colors. Only change the hair color in each cell, keep perfect facial consistency across all nine. Hair colors: natural black, dark brown, chocolate brown, light brown, soft caramel, warm honey blonde, ash brown, copper red, platinum blonde." + HAIR_IDENTITY;
+// ── 헤어 — 스냅샷 사본 대신 엣지와 같은 단일 소스에서 직접 렌더(드리프트 0).
+// (기존 스냅샷은 identityLock 구판 + "braided hairstyle" 오기 + 출처 파일 표기가
+//  이관 전 경로라 어드민이 보는 것 ≠ 실제였다 — 품질검토 교정)
+const HAIR_STYLE_GRID = hairStyleGrid("bride");
+const HAIR_COLOR_GRID = hairColorGrid("bride");
 
 function entry(e: PromptEntry): PromptEntry { return e; }
 
@@ -56,6 +55,16 @@ export const PROMPT_CATALOG: PromptEntry[] = [
   entry({ id: "dress-recommend", feature: "방구석 드레스 투어", title: "드레스 · AI 추천(체형)", kind: "image",
     exampleImage: `${PREV}/banner-dress.webp`, sourceFile: "src/data/fittingScenes.ts → buildRecommendDressPrompt",
     prompt: buildRecommendDressPrompt("STUDIO_BRIGHT", "웨이브", "상체가 가늘고 하체에 볼륨 — A라인·엠파이어로 허리선을 강조") }),
+
+  entry({ id: "dress-full-retouch-studio", feature: "방구석 드레스 투어", title: "드레스 · 전신(화보 보정 — UI 기본)", kind: "image",
+    exampleImage: `${PREV}/banner-dress.webp`, sourceFile: "src/data/fittingScenes.ts + retouch.ts",
+    note: "retouch_level=studio — 실제 UI 기본값 렌더", prompt: buildFittingPrompt("STUDIO_BRIGHT", DRESS, { shotType: "full", retouch: "studio" }) }),
+  entry({ id: "dress-full-retouch-glam", feature: "방구석 드레스 투어", title: "드레스 · 전신(풀 보정)", kind: "image",
+    exampleImage: `${PREV}/banner-dress.webp`, sourceFile: "src/data/fittingScenes.ts + retouch.ts",
+    prompt: buildFittingPrompt("STUDIO_BRIGHT", DRESS, { shotType: "full", retouch: "glam" }) }),
+  entry({ id: "suit-groom-full", feature: "방구석 드레스 투어", title: "예복(신랑) · 전신 맞춤", kind: "image",
+    exampleImage: `${PREV}/banner-dress.webp`, sourceFile: "src/data/fittingScenes.ts → buildFittingPrompt(gender=groom)",
+    note: "신랑 변형 — 씬 중립화·그루밍 프레이밍 검증용", prompt: buildFittingPrompt("CEREMONY_BRIGHT", GROOM, { custom: true, shotType: "full", gender: "groom", retouch: "studio" }) }),
 
   // ── 메이크업 ──
   entry({ id: "makeup", feature: "착붙 메이크업", title: "메이크업 시연", kind: "image",
@@ -80,12 +89,12 @@ export const PROMPT_CATALOG: PromptEntry[] = [
   })),
 
   // ── 헤어(엣지 전용 스냅샷) ──
-  entry({ id: "hair-style", feature: "헤어 변형", title: "헤어 · 스타일 9그리드", kind: "image-snapshot",
-    exampleImage: `${PREV}/banner-hair.webp`, sourceFile: "supabase/functions/dewy-hair-preview/index.ts (STYLE_GRID)",
-    note: "엣지 함수 상수 스냅샷 — 추천 시 어울림 순으로 동적 재생성됨", prompt: HAIR_STYLE_GRID }),
-  entry({ id: "hair-color", feature: "헤어 변형", title: "헤어 · 컬러 9그리드", kind: "image-snapshot",
-    exampleImage: `${PREV}/banner-hair.webp`, sourceFile: "supabase/functions/dewy-hair-preview/index.ts (COLOR_GRID)",
-    note: "엣지 함수 상수 스냅샷", prompt: HAIR_COLOR_GRID }),
+  entry({ id: "hair-style", feature: "헤어 변형", title: "헤어 · 스타일 9그리드", kind: "image",
+    exampleImage: `${PREV}/banner-hair.webp`, sourceFile: "supabase/functions/_shared/subjectPrompt.ts → hairStyleGrid",
+    note: "엣지와 동일 단일 소스에서 렌더 — 추천 시 어울림 순으로 동적 재생성됨", prompt: HAIR_STYLE_GRID }),
+  entry({ id: "hair-color", feature: "헤어 변형", title: "헤어 · 컬러 9그리드", kind: "image",
+    exampleImage: `${PREV}/banner-hair.webp`, sourceFile: "supabase/functions/_shared/subjectPrompt.ts → hairColorGrid",
+    note: "엣지와 동일 단일 소스에서 렌더", prompt: HAIR_COLOR_GRID }),
 
   // ── LLM 텍스트 프롬프트(엣지 — 길어서 출처 참조) ──
   entry({ id: "ai-planner", feature: "LLM 텍스트", title: "AI 플래너 시스템+근거주입", kind: "text-ref",

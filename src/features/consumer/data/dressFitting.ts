@@ -58,16 +58,6 @@ export async function fetchActiveDresses(): Promise<Record<string, unknown>[]> {
   return (data ?? []) as unknown as Record<string, unknown>[];
 }
 
-/** 카탈로그 드레스 메타데이터 전체 조회(프롬프트 주입용). 없으면 null. */
-export async function fetchDressMeta(sampleId: string): Promise<Record<string, unknown> | null> {
-  const { data } = await supabase
-    .from("dress_samples")
-    .select("name, silhouette, neckline, sleeve, length, fabric, details, back_design, color, waist, mood")
-    .eq("id", sampleId)
-    .maybeSingle();
-  return (data as Record<string, unknown> | null) ?? null;
-}
-
 /** dewy-fitting 호출 → fitting_id 반환. error/응답 error/누락 시 throw(호출부가 메시지 분기). */
 export async function generateDressFitting(body: Record<string, unknown>): Promise<string> {
   const { data, error } = await supabase.functions.invoke("dewy-fitting", { body });

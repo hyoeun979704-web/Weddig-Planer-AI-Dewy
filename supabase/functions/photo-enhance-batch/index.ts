@@ -55,7 +55,8 @@ function buildPrompt(options: string[], custom?: string): string {
   let p = BASE_PROMPT;
   const set = new Set(options);
   for (const op of VALID_OPS) if (set.has(op)) p += OP_PROMPTS[op];
-  const c = (custom ?? "").trim();
+  // 자유 텍스트 살균(제어문자 제거 + 300자) — 자유 슬롯이지만 identity 규칙 섹션은 못 건드림.
+  const c = (custom ?? "").replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "").trim();
   if (c) p += " ADDITIONAL REQUEST (apply naturally, keep identity & realism): " + c.slice(0, 300);
   return p;
 }
@@ -165,10 +166,17 @@ serve(async (req) => {
     if (jobErr || !jobRow) { await refund(finalCost); return json({ error: "job_insert_failed" }, 500); }
     const jobId = jobRow.id as string;
 
-    const finish = async (patch: Record<string, unknown>) => {
-      await admin.from("photo_retouch_jobs")
+    // 상태 전이 승자만 환불 — reaper 이중 환불 차단(hair 와 동일 패턴). 기존
+    // "환불 먼저 → finish 나중" 순서는 finish 실패/워커 킬 시 reaper 재환불 창구였다.
+    const finishAndRefund = async (patch: Record<string, unknown>, refundAmt: number) => {
+      const { data: won, error } = await admin
+        .from("photo_retouch_jobs")
         .update({ ...patch, updated_at: new Date().toISOString() })
-        .eq("id", jobId);
+        .eq("id", jobId)
+        .eq("status", "processing")
+        .select("id");
+      if (error || !won || won.length === 0) return;
+      await refund(refundAmt);
     };
 
     // ── 백그라운드: 클라가 페이지를 벗어나도 서버에서 계속 진행 ──
@@ -229,11 +237,9 @@ serve(async (req) => {
         const ok = results.length;
         const failed = paths.length - ok;
         const refundAmt = failed > 0 ? (ok === 0 ? finalCost : Math.round((failed / paths.length) * finalCost)) : 0;
-        await refund(refundAmt);
+        if (ok === 0) { await finishAndRefund({ status: "failed", error: "all_failed", charged: 0 }, finalCost); return; }
 
-        if (ok === 0) { await finish({ status: "failed", error: "all_failed", charged: 0 }); return; }
-
-        await finish({ status: "completed", results, charged: finalCost - refundAmt });
+        await finishAndRefund({ status: "completed", results, charged: finalCost - refundAmt }, refundAmt);
         // 사용 기록 증가(첫 할인 소진)
         await admin.from("photo_retouch_usage").upsert(
           {
@@ -246,8 +252,7 @@ serve(async (req) => {
         );
       } catch (e) {
         console.error("photo job error:", e);
-        await refund(finalCost);
-        await finish({ status: "failed", error: "server_error", charged: 0 });
+        await finishAndRefund({ status: "failed", error: "server_error", charged: 0 }, finalCost);
       }
     })();
 
