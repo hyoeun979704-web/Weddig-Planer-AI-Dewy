@@ -173,8 +173,9 @@ const Premium = () => {
           </div>
         )}
 
-        {/* Plan Selection */}
-        {(!isPremium || trialExpired) && (
+        {/* Plan Selection — 결제 진입이 숨겨진 빌드(iOS IAP 미오픈)에선 가격 카드도 숨김.
+            카드만 남기면 눌러도 아무 일도 없는 semi-dead-end 가 돼 심사 2.1(미완성) 소지(감사 260702). */}
+        {(!isPremium || trialExpired) && isPaymentEntryVisible() && (
           <div className="px-4 py-3">
             <div className="grid grid-cols-2 gap-3">
               {/* Monthly */}

@@ -80,7 +80,7 @@
 
 **단일 소스 인덱스(여기만 신뢰, 사본 만들지 말 것 — 드리프트 방지)**
 - 에이전트 규칙 = **이 `AGENTS.md`** · 감사 표면 전수 = `docs/audit-surface-map.md` · 앱 분리 계획 =
-  `docs/260624_app_separation_roadmap.md` · 실제 DB 스키마 진실원천 = `src/integrations/supabase/types.ts`
+  `docs/260624_app_separation_roadmap.md` · 실제 DB 스키마 진실원천 = `packages/db/src/supabase/types.ts`
   · 결제 구조 = `docs/260620_payment_compliance_plan.md` · iOS 제출 = `docs/260622_appstore_submission_runbook.md`.
 
 ## 코드 작성·리뷰 규칙 — 항상 적용 (바이브코딩 안전장치)
@@ -200,7 +200,8 @@ API→호출 경로 시뮬레이션). e2e 불가(sandbox 차단 등) 시 "검증
   구성됐나**(기존 hook/RPC 가 무엇을 읽고 쓰나 — 재사용, 중복 생성 금지) ③ **내가 쓰려는 컬럼·
   데이터가 실제로 존재·채워져 있나**(빈 컬럼/미적용 마이그 아님) 를 확인하고 진행한다. "있겠지" 로
   바로 코딩하면 백엔드에 구멍이 난다.
-  - **실제 DB 의 진짜 소스 = `src/integrations/supabase/types.ts`**(실 DB 에서 생성된 타입). 테이블·
+  - **실제 DB 의 진짜 소스 = `packages/db/src/supabase/types.ts`**(실 DB 에서 생성된 타입 — 구
+    `src/integrations/...` 경로는 모노레포 전환으로 삭제됨). 테이블·
     컬럼·뷰 존재 확인은 **여기를 먼저** 본다. 그다음 `supabase/migrations/**`(히스토리)와 기존
     `.from()`/hook 사용처를 grep.
   - **양쪽 모두 불완전할 수 있다(드리프트)**: 마이그 파일 존재 ≠ DB 적용이고, types.ts 도 stale 일 수

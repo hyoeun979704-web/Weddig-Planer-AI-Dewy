@@ -31,6 +31,17 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>GADApplicationIdentifier</key>
 	<string>ca-app-pub-3558095447353368~7441366116</string>
+	<!-- SKAdNetwork(광고 어트리뷰션, 런북 §6·ios-packaging §5-B-2). 아래는 Google 자체 네트워크 ID
+	     (@capacitor-community/admob 공식 문서 기재값). Google 권장 서드파티 바이어 목록(~50개)은
+	     https://developers.google.com/admob/ios/3p-skadnetworks 의 skadnetworkids.json 에서 받아
+	     이 array 에 추가할 것 — CI 환경 네트워크 정책으로 이 세션에서는 검증된 1개만 반영. -->
+	<key>SKAdNetworkItems</key>
+	<array>
+		<dict>
+			<key>SKAdNetworkIdentifier</key>
+			<string>cstr6suwn9.skadnetwork</string>
+		</dict>
+	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

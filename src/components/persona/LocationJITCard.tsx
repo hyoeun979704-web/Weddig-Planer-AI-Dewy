@@ -14,12 +14,14 @@
 // 식장이 명시 등록되거나 wedding_region 이 있으면 본 카드는 안 뜸. X dismiss 시 7일 cooldown.
 
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { MapPin, X, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWeddingSchedule } from "@/hooks/useWeddingSchedule";
 import { useWeddingVenue } from "@/hooks/useWeddingVenue";
 import { useFilterStore } from "@/stores/useFilterStore";
 import { normalizeRegion } from "@/lib/regions";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 const DISMISS_KEY = "dewy:location-jit-dismissed";
@@ -122,6 +124,24 @@ export default function LocationJITCard() {
 
   const handleYes = () => {
     setRequesting(true);
+    // 위치정보법: 약관 고지 후 동의 이력 기록(user_consents — PhotoUploadConsent 패턴 재사용).
+    // 좌표는 저장하지 않으므로 "동의했다"는 사실만 남긴다. 실패해도 흐름은 막지 않는다.
+    if (user) {
+      void (supabase as any)
+        .from("user_consents")
+        .insert({
+          user_id: user.id,
+          consent_type: "location_jit_v1",
+          consent_version: 1,
+          agreed: true,
+          user_agent:
+            typeof navigator !== "undefined" ? navigator.userAgent?.slice(0, 500) : null,
+          notes: JSON.stringify({ scope: "sido_session_only", persisted_coords: false }),
+        })
+        .then(({ error }: { error: unknown }) => {
+          if (error) console.error("location consent log failed", error);
+        });
+    }
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         try {
@@ -198,7 +218,8 @@ export default function LocationJITCard() {
         </div>
         <p className="text-[11px] text-muted-foreground leading-snug mb-3">
           위치는 한 번만 확인하고 좌표는 저장하지 않아요. 식장은 추천만 하고
-          확정은 [이 식장으로 정하기] 를 누르실 때만 돼요.
+          확정은 [이 식장으로 정하기] 를 누르실 때만 돼요.{" "}
+          <Link to="/location-terms" className="underline">위치기반서비스 이용약관</Link>
         </p>
         <div className="flex gap-2">
           <button

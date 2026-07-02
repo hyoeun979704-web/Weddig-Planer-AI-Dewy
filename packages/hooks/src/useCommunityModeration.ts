@@ -13,7 +13,9 @@ import { useAuth } from "@/contexts/AuthContext";
 // 차단 목록은 피드·댓글 쿼리에서 `not in` 필터로 활용한다.
 // 신고는 community_reports.unique(reporter, target_type, target_id) 로 중복 방지.
 
-export type ReportTargetType = "post" | "comment" | "ai_content";
+// 'review' = 업체 후기(place_reviews) 신고 — App Store 1.2: 모든 UGC 표면에 신고 수단 필요.
+// DB CHECK(community_reports_target_type_check)와 반드시 동기(20260702150000 마이그레이션).
+export type ReportTargetType = "post" | "comment" | "ai_content" | "review";
 
 export type ReportReasonCode =
   | "spam"

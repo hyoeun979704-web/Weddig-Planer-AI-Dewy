@@ -37,9 +37,9 @@ const AccountDeletion = () => {
             <li>Dewy 앱 실행</li>
             <li>하단 메뉴에서 <strong>마이페이지</strong> 탭 선택</li>
             <li>
-              <strong>설정 → 계정 관리 → 회원 탈퇴</strong> 메뉴 진입
+              <strong>설정 → 계정 → 계정 삭제</strong> 메뉴 진입
             </li>
-            <li>안내 문구를 확인하고 <strong>탈퇴하기</strong> 버튼 선택</li>
+            <li>삭제되는 데이터 안내를 확인하고 삭제를 확정</li>
             <li>본인 확인 후 탈퇴 처리가 즉시 완료됩니다</li>
           </ol>
           <p className="mt-3 text-muted-foreground">

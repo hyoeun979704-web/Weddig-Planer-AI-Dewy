@@ -100,8 +100,8 @@ const PhotoUploadConsent = ({
           required
           checked={agreeOwnPhoto}
           onChange={setAgreeOwnPhoto}
-          label="본인 사진만 업로드합니다"
-          description="타인의 사진을 동의 없이 업로드할 경우 초상권 침해 등 법적 책임을 질 수 있습니다."
+          label="본인(및 이용에 동의한 동반인)의 사진만 업로드합니다"
+          description="사진 속 다른 사람(예: 예비 배우자)이 있다면 그 사람의 동의를 받았음을 확인합니다. 타인의 사진을 동의 없이 업로드할 경우 초상권 침해 등 법적 책임을 질 수 있습니다."
         />
 
         <ConsentItem
@@ -109,7 +109,7 @@ const PhotoUploadConsent = ({
           checked={agreeProcessing}
           onChange={setAgreeProcessing}
           label="사진의 AI 처리·외부 전송에 동의합니다"
-          description="업로드한 사진은 결과 생성을 위해 OpenAI(이미지 생성)·remove.bg(배경 제거) 등 AI 처리 위탁사로 전송됩니다."
+          description="업로드한 사진은 결과 생성을 위해 OpenAI(이미지 생성)·Google Gemini(사진 품질 검사)·remove.bg(배경 제거) 등 AI 처리 위탁사로 전송됩니다."
         />
 
         <ConsentItem
