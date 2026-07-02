@@ -75,6 +75,32 @@
   없음. Dewy 의 CEREMONY 씬(빈 홀·버진로드 입장)은 이미 이 공백을 채우는 자산 — 신부대기실·
   한복/폐백(부위 명칭: jeogori·chima·otgoreum·norigae·binyeo) 씬 확장이 차별화 지점.
 
+### 쓰레드(Threads) 프롬프트 서베이 (260702 추가 — 후속 PR)
+
+> 한계 고지: threads.com 직접 fetch 는 egress 정책상 차단 — 검색 인덱스에 노출된 본문
+> 스니펫 + 2차 소스(블로그·기사) 기반. 댓글로 유통되는 프롬프트 전문 일부는 미확보.
+
+- **유통 구조**: 프롬프트 나눔 계정(@jeju_harry 허브, @miniminim71 등)이 본문에 예시
+  이미지 + "프롬프트는 댓글에" 포맷으로 배포, 팔로우/DM 유도. 나노바나나 누적 5억 장+,
+  사리(전통의상 변신) 트렌드만 2억 장+ — **웨딩/격식 착장 변신이 최대 유스케이스군**.
+- **표준 문형** = ① 문두 identity 선언("This is the reference copy the face and don't
+  change facial feature") ② 신부 완성 상태 서술(gown+veil+bouquet — 착장 서술만으로
+  브라이덜 헤어·메이크업이 자동 완성됨) ③ 장면 ④ 렌즈·비율(85mm/105mm macro, 4:5)
+  ⑤ 감정은 행동으로("groom wiping a tear" > "happy"). 한국어 최소형: "우아한 웨딩드레스
+  입고 멋진 예식장에 서있는 모습으로 그려줘"(@bboya0704).
+- **불만 1순위 = 얼굴 바뀜**: "헤어 정리·피부 보정하다 원본 얼굴과 달라진다"(@jeju_harry
+  팔로워 다수) → "원본 얼굴 유지 강화 버전"(이목구비 그대로, 헤어·피부만 최소 적용)이
+  별도 바이럴. 통용 고정구: "the exact same face as the uploaded image, no alteration,
+  100% identical" / "얼굴, 옷, 포즈는 그대로 유지". → Dewy identity lock 이 이미 이보다
+  정교(이목구비 항목별+비대칭) — 방향 검증됨.
+- **분석→생성 결합은 시장 공백**: 쓰레드에선 분석형 프롬프트(얼평·퍼컬·골격 컨설팅)와
+  변신형 프롬프트가 따로 유통 — "얼굴형·퍼컬 분석 → 어울리는 스타일 선택 → 생성"을 한
+  흐름으로 묶은 사례 미발견. 예비신부 수요는 오프라인 퍼컬 16타입+골격진단 상품
+  (@colorzoomin)의 인기로 입증. → **본 개편의 TAILORED(무언분석) 블록이 이 공백을 선점**.
+- **반영**: ① 결과물 기준을 "웨딩 당일"로(일상 복사 앵커 제거 — WEDDING-DAY HAIR/MAKEUP/
+  GROOMING 섹션) ② 맞춤 모드 TAILORED 무언분석 ③ shotFramingBlock 에 렌즈 앵커(전신
+  50mm·상반신 85mm·클로즈업 105mm macro 룩) 추가.
+
 ---
 
 ## 2. 현 아키텍처 분석
